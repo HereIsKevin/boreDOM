@@ -1,0 +1,33 @@
+{
+  "name": "boredom",
+  "version": "0.1.0",
+  "description": "Easily manipulating of the DOM without virtual DOM",
+  "main": "index.js",
+  "scripts": {
+    "watch": "tsc --watch",
+    "build": "tsc",
+    "format:check": "prettier -c ./src/",
+    "format:write": "prettier --write ./src/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HereIsKevin/boreDOM.git"
+  },
+  "keywords": [
+    "DOM",
+    "html",
+    "javascript",
+    "ui",
+    "fast"
+  ],
+  "author": "Kevin Feng",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/HereIsKevin/boreDOM/issues"
+  },
+  "homepage": "https://github.com/HereIsKevin/boreDOM#readme",
+  "devDependencies": {
+    "prettier": "^2.0.2",
+    "typescript": "^3.8.3"
+  }
+}
