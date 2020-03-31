@@ -21,8 +21,12 @@ class Diff {
   ): string {
     let result: string[] = text.split(separator);
 
-    const removePatch: DiffToken[] = patch.filter((x) => x["type"] === "remove");
-    const insertPatch: DiffToken[] = patch.filter((x) => x["type"] === "insert");
+    const removePatch: DiffToken[] = patch.filter(
+      (x) => x["type"] === "remove"
+    );
+    const insertPatch: DiffToken[] = patch.filter(
+      (x) => x["type"] === "insert"
+    );
 
     for (let [modifier, remove] of removePatch.entries()) {
       result.splice(remove["oldIndex"] - modifier, 1);
