@@ -1,3 +1,10 @@
+interface DiffToken {
+  oldIndex: number;
+  newIndex: number;
+  type: string;
+  value: string;
+}
+
 class Diff {
   private oldText: string[];
   private newText: string[];
@@ -7,17 +14,121 @@ class Diff {
     this.newText = newText.split(separator);
   }
 
-  public insertIndexes(sameIndexes: number[][]): number[] {
+  public static applyPatch(
+    text: string,
+    patch: DiffToken[],
+    separator: string = ""
+  ): string {
+    let result: string[] = text.split(separator);
+
+    const removePatch: DiffToken[] = patch.filter((x) => x["type"] === "remove");
+    const insertPatch: DiffToken[] = patch.filter((x) => x["type"] === "insert");
+
+    for (let [modifier, remove] of removePatch.entries()) {
+      result.splice(remove["oldIndex"] - modifier, 1);
+    }
+
+    for (let insert of insertPatch) {
+      result.splice(insert["newIndex"], 0, insert["value"]);
+    }
+
+    return result.join(separator);
+  }
+
+  public generatePatch(): DiffToken[] {
+    return this.generateTokens().filter((x) => x["type"] !== "same");
+  }
+
+  public printVisual(): void {
+    const reset: string = "\u001b[0m";
+    const red: string = "\u001b[31m";
+    const green: string = "\u001b[32m";
+
+    for (let token of this.generateTokens()) {
+      if (token["type"] === "same") {
+        console.log(
+          `\t${token["oldIndex"] + 1}\t${token["newIndex"] + 1}\t${
+            token["value"]
+          }`
+        );
+      } else if (token["type"] === "remove") {
+        console.log(
+          `${red}\t${token["oldIndex"] + 1}\t-\t${token["value"]}${reset}`
+        );
+      } else if (token["type"] === "insert") {
+        console.log(
+          `${green}\t+\t${token["newIndex"] + 1}\t${token["value"]}${reset}`
+        );
+      }
+    }
+  }
+
+  public generateTokens(): DiffToken[] {
+    const same: number[][] = this.sameIndexes();
+    const remove: number[] = this.removeIndexes(same);
+    const insert: number[] = this.insertIndexes(same);
+
+    let tokens: DiffToken[] = [];
+
+    const longerText: number = Math.max(
+      this.oldText.length,
+      this.newText.length
+    );
+    const sameOld = same.map((x) => x[1]);
+    const sameNew = same.map((x) => x[0]);
+
+    for (let index = 0; index < longerText; index++) {
+      if (sameNew.includes(index)) {
+        tokens.push({
+          oldIndex: sameOld[sameNew.indexOf(index)],
+          newIndex: index,
+          type: "same",
+          value: this.newText[index],
+        });
+      }
+
+      if (remove.includes(index)) {
+        tokens.push({
+          oldIndex: index,
+          newIndex: -1,
+          type: "remove",
+          value: this.oldText[index],
+        });
+      }
+
+      if (insert.includes(index)) {
+        tokens.push({
+          oldIndex: -1,
+          newIndex: index,
+          type: "insert",
+          value: this.newText[index],
+        });
+      }
+    }
+
+    for (let index = 0; index < tokens.length - 1; index++) {
+      const currentToken = tokens[index]["oldIndex"];
+      const nextToken = tokens[index + 1]["oldIndex"];
+
+      if (currentToken > nextToken && currentToken !== -1 && nextToken !== -1) {
+        [tokens[index], tokens[index + 1]] = [tokens[index + 1], tokens[index]];
+      }
+    }
+
+    return tokens;
+  }
+
+  private insertIndexes(sameIndexes: number[][]): number[] {
     let sameNewIndexes = sameIndexes.map((x) => x[0]);
     return [...this.newText.keys()].filter((x) => !sameNewIndexes.includes(x));
   }
 
-  public removeIndexes(sameIndexes: number[][]): number[] {
+  private removeIndexes(sameIndexes: number[][]): number[] {
     const sameOldIndexes: number[] = sameIndexes.map((x) => x[1]);
     return [...this.oldText.keys()].filter((x) => !sameOldIndexes.includes(x));
   }
 
-  public sameIndexes(): number[][] {
+  private sameIndexes(): number[][] {
     let samePoints: number[][] = [];
 
     for (let x = 0; x < this.newText.length; x++) {
@@ -68,16 +179,6 @@ class Diff {
   }
 }
 
-function main() {
-  let compare: Diff = new Diff("ABCABBA", "CBABAC");
-
-  let same: number[][] = compare.sameIndexes();
-  let remove: number[] = compare.removeIndexes(same);
-  let insert: number[] = compare.insertIndexes(same);
-
-  console.log(same);
-  console.log(remove);
-  console.log(insert);
-}
-
-main();
+let diff: Diff = new Diff("ABCABBA", "CBABAC");
+diff.printVisual();
+console.log(Diff.applyPatch("ABCABBA", diff.generatePatch()));
