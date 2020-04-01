@@ -8,10 +8,12 @@ interface DiffToken {
 class Diff {
   private oldText: string[];
   private newText: string[];
+  private separator: string;
 
   public constructor(oldText: string, newText: string, separator: string = "") {
     this.oldText = oldText.split(separator);
     this.newText = newText.split(separator);
+    this.separator = separator;
   }
 
   public static applyPatch(
@@ -43,28 +45,38 @@ class Diff {
     return this.generateTokens().filter((x) => x["type"] !== "same");
   }
 
-  public printVisual(): void {
+  public printVisual(lines: boolean = false): void {
     const reset: string = "\u001b[0m";
     const red: string = "\u001b[31m";
     const green: string = "\u001b[32m";
 
+    const output: string[] = [];
+
     for (let token of this.generateTokens()) {
       if (token["type"] === "same") {
-        console.log(
-          `\t${token["oldIndex"] + 1}\t${token["newIndex"] + 1}\t${
-            token["value"]
-          }`
+        output.push(
+          lines
+            ? `\t${token["oldIndex"] + 1}\t${token["newIndex"] + 1}\t${
+                token["value"]
+              }`
+            : token["value"]
         );
       } else if (token["type"] === "remove") {
-        console.log(
-          `${red}\t${token["oldIndex"] + 1}\t-\t${token["value"]}${reset}`
+        output.push(
+          lines
+            ? `${red}\t${token["oldIndex"] + 1}\t-\t${token["value"]}${reset}`
+            : `${red}${token["value"]}${reset}`
         );
       } else if (token["type"] === "insert") {
-        console.log(
-          `${green}\t+\t${token["newIndex"] + 1}\t${token["value"]}${reset}`
+        output.push(
+          lines
+            ? `${green}\t+\t${token["newIndex"] + 1}\t${token["value"]}${reset}`
+            : `${green}${token["value"]}${reset}`
         );
       }
     }
+
+    console.log(output.join(this.separator));
   }
 
   public generateTokens(): DiffToken[] {
@@ -143,7 +155,7 @@ class Diff {
       }
     }
 
-    let currentPoint: number[] = [0, 0];
+    let currentPoint: number[] = [-1, -1];
     let finalPoints: number[][] = [];
 
     while (true) {
