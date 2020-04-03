@@ -24,7 +24,7 @@ interface PatchToken {
 
 function distance(point1: number[], point2: number[]): number {
   return Math.sqrt(
-    Math.pow(point1[0] - point2[0], 2) + Math.pow(point1[1] - point2[1], 2)
+    Math.pow(point2[0] - point1[0], 2) + Math.pow(point2[1] - point1[1], 2)
   );
 }
 
