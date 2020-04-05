@@ -1,0 +1,32 @@
+#root {
+  margin: 0;
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+#display {
+  font-family: sans-serif;
+  font-size: 4rem;
+  text-align: center;
+  height: 5rem;
+}
+
+button {
+  font-family: sans-serif;
+  -webkit-appearance: none;
+  font-size: 2rem;
+  background-color: #ffffff;
+  color: #000000;
+}
+
+button:hover {
+  background-color: #777777;
+  color: #ffffff;
+}
+
+button:active {
+  background-color: #000000;
+  color: #ffffff;
+}
