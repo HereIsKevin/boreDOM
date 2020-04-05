@@ -1,3 +1,70 @@
+class BoreDOMNew {
+  private root: HTMLElement;
+
+  public constructor(root: HTMLElement) {
+    this.root = root;
+  }
+
+  public render(elements: DocumentFragment): void {
+    BoreDOMNew.sanitize(this.root);
+    BoreDOMNew.sanitize(elements);
+
+    if (this.root.childNodes.length === 0) {
+      this.root.append(elements);
+    } else if (elements.childNodes.length === 0) {
+      while (this.root.lastChild) {
+        this.root.removeChild(this.root.lastChild);
+      }
+    } else {
+      BoreDOMNew.updateNode(this.root, elements);
+    }
+  }
+
+  public static html(template: string): DocumentFragment {
+    return document.createRange().createContextualFragment(template);
+  }
+
+  private static sanitize(element: HTMLElement | DocumentFragment): void {
+    for (let node of element.childNodes) {
+      if (
+        node.nodeType === Node.COMMENT_NODE ||
+        (node.nodeType === Node.TEXT_NODE && !/\S/.test(node.nodeValue || ""))
+      ) {
+        node.remove();
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        BoreDOM.sanitize(node as HTMLElement);
+      }
+    }
+  }
+
+  private static updateNode(
+    oldNodes: HTMLElement,
+    newNodes: HTMLElement | DocumentFragment
+  ): void {}
+
+  private static keepNodes(
+    oldNodes: HTMLElement,
+    newNodes: HTMLElement | DocumentFragment
+  ): number[][] {
+    let identicalNodes: number[][] = [];
+    let sameAttributeNodes: number[][] = [];
+    let sameNameNodes: number[][] = [];
+
+    for (let x = 0; x < nodeNew.childNodes.length; x++) {
+      for (let y = 0; y < nodeOld.childNodes.length; y++) {
+        const newElement = nodeNew.childNodes[x];
+        const oldElement = nodeOld.childNodes[y];
+
+        if (newElement.isEqualNode(oldElement)) {
+          identicalNodes.push([x, y]);
+        } else if (newElement.nodeName === oldElement.nodeName) {
+          sameNameNodes.push([x, y]);
+        }
+      }
+    }
+  }
+}
+
 export { html, BoreDOM };
 
 function html(template: string): DocumentFragment {
@@ -81,7 +148,7 @@ class BoreDOM {
 
     for (let [modifier, remove] of removeNodes.entries()) {
       for (let [index, node] of nodeOld.childNodes.entries()) {
-        if (index === (remove - modifier)) {
+        if (index === remove - modifier) {
           nodeOld.removeChild(node);
           break;
         }
