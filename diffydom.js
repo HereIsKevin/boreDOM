@@ -28,7 +28,7 @@ function findIdenticalNodes(oldElement, newElement) {
 }
 
 function isSameNode(node1, node2) {
-  return node1.cloneNode(true).isEqualNode(node2.cloneNode(true));
+  return node1.cloneNode(false).isEqualNode(node2.cloneNode(false));
 }
 
 function findSameNodes(oldElement, newElement) {
