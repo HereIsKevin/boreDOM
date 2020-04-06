@@ -1,4 +1,8 @@
-export { BoreDOM };
+export { html, render };
+
+function html(template: string): DocumentFragment {
+  return document.createRange().createContextualFragment(template);
+}
 
 function sanitizeNode(element: Node): void {
   for (let node of element.childNodes) {
@@ -137,13 +141,4 @@ function render(oldElement: Node, newElement: Node): void {
   } else {
     patchNode(oldElement, newElement);
   }
-}
-
-function html(template: string): DocumentFragment {
-  return document.createRange().createContextualFragment(template);
-}
-
-const BoreDOM = {
-  render: render,
-  html: html,
 }
