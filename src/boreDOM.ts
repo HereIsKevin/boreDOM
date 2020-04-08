@@ -126,9 +126,9 @@ function patchNode(oldNode: Node, newNode: Node): void {
     oldNode.removeChild(oldNode.childNodes[index - modifier]);
   }
 
-  for (let index of insertNodes) {
+  for (let [modifier, index] of insertNodes.entries()) {
     // insert items
-    oldNode.insertBefore(newNode.childNodes[index], oldNode.childNodes[index]);
+    oldNode.insertBefore(newNode.childNodes[index - modifier], oldNode.childNodes[index]);
   }
 }
 
