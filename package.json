@@ -4,7 +4,9 @@
   "description": "Easily manipulating of the DOM without virtual DOM",
   "scripts": {
     "watch": "tsc --watch",
-    "build": "tsc",
+    "clean": "rm ./build/*",
+    "build:dev": "tsc",
+    "build:release": "tsc && terser --compress --mangle --mangle-props --toplevel --output ./build/boreDOM.min.js -- ./build/boreDOM.js",
     "format:check": "prettier -c ./src/",
     "format:write": "prettier --write ./src/"
   },
@@ -26,7 +28,8 @@
   },
   "homepage": "https://github.com/HereIsKevin/boreDOM#readme",
   "devDependencies": {
-    "prettier": "^2.0.2",
+    "prettier": "^2.0.4",
+    "terser": "^4.6.10",
     "typescript": "^3.8.3"
   }
 }
