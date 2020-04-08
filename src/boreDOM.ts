@@ -1,5 +1,17 @@
 export { html, render };
 
+function isTextNode(node: Node): node is Text {
+  return node.nodeType === Node.TEXT_NODE;
+}
+
+function isElementNode(node: Node): node is Element {
+  return node.nodeType === Node.ELEMENT_NODE;
+}
+
+function isCommentNode(node: Node): node is Comment {
+  return node.nodeType === Node.COMMENT_NODE;
+}
+
 function html(template: string): DocumentFragment {
   return document.createRange().createContextualFragment(template);
 }
@@ -7,13 +19,12 @@ function html(template: string): DocumentFragment {
 function sanitizeNode(element: Node): void {
   for (let node of element.childNodes) {
     if (
-      node.nodeType === Node.COMMENT_NODE ||
-      (node.nodeType === Node.TEXT_NODE &&
-        (node.textContent || "").trim() === "")
+      isCommentNode(node) ||
+      (isTextNode(node) && (node.textContent || "").trim() === "")
     ) {
       // remove all comment nodes or empty text nodes
       node.remove();
-    } else if (node.nodeType === Node.ELEMENT_NODE) {
+    } else if (isElementNode(node)) {
       // continue sanitizing element child nodes
       sanitizeNode(node);
     }
@@ -65,29 +76,24 @@ function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
 
 function patchAttributes(oldNode: Node, newNode: Node): void {
   if (
-    oldNode.nodeType === Node.TEXT_NODE &&
+    isTextNode(oldNode) &&
+    isTextNode(newNode) &&
     oldNode.nodeValue !== newNode.nodeValue
   ) {
     // update text for text nodes
     oldNode.nodeValue = newNode.nodeValue;
-  } else if (oldNode.nodeType === Node.ELEMENT_NODE) {
-    for (let attribute of (newNode as Element).getAttributeNames()) {
-      if (
-        (oldNode as Element).getAttribute(attribute) !==
-        (newNode as Element).getAttribute(attribute)
-      ) {
+  } else if (isElementNode(oldNode) && isElementNode(newNode)) {
+    for (let attribute of newNode.getAttributeNames()) {
+      if (oldNode.getAttribute(attribute) !== newNode.getAttribute(attribute)) {
         // update attribute if it is different
-        (oldNode as Element).setAttribute(
-          attribute,
-          (newNode as Element).getAttribute(attribute) || ""
-        );
+        oldNode.setAttribute(attribute, newNode.getAttribute(attribute) || "");
       }
     }
 
-    for (let attribute of (oldNode as Element).getAttributeNames()) {
-      if (!(newNode as Element).hasAttribute(attribute)) {
+    for (let attribute of oldNode.getAttributeNames()) {
+      if (!newNode.hasAttribute(attribute)) {
         // remove attributes that are not in the new node
-        (oldNode as Element).removeAttribute(attribute);
+        oldNode.removeAttribute(attribute);
       }
     }
   }
