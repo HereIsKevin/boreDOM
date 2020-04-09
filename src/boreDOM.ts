@@ -128,7 +128,10 @@ function patchNode(oldNode: Node, newNode: Node): void {
 
   for (let [modifier, index] of insertNodes.entries()) {
     // insert items
-    oldNode.insertBefore(newNode.childNodes[index - modifier], oldNode.childNodes[index]);
+    oldNode.insertBefore(
+      newNode.childNodes[index - modifier],
+      oldNode.childNodes[index]
+    );
   }
 }
 
