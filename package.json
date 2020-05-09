@@ -28,8 +28,8 @@
   },
   "homepage": "https://github.com/HereIsKevin/boreDOM#readme",
   "devDependencies": {
-    "prettier": "^2.0.4",
-    "terser": "^4.6.10",
+    "prettier": "^2.0.5",
+    "terser": "^4.6.13",
     "typescript": "^3.8.3"
   }
 }
