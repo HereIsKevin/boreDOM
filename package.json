@@ -6,7 +6,7 @@
     "watch": "tsc --watch",
     "clean": "rm ./build/*",
     "build:dev": "tsc",
-    "build:release": "tsc && terser --compress --mangle --mangle-props --toplevel --output ./build/boreDOM.min.js -- ./build/boreDOM.js",
+    "build:release": "tsc; terser --config-file ./terser.json --output ./build/boreDOM.min.js -- ./build/boreDOM.js; terser --config-file ./terser.json --output ./build/boreElement.min.js -- ./build/boreElement.js",
     "format:check": "prettier -c ./src/",
     "format:write": "prettier --write ./src/"
   },

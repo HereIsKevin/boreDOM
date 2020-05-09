@@ -1,0 +1,8 @@
+{
+  "warnings": "verbose",
+  "mangle": {
+      "properties": true
+  },
+  "module": true,
+  "toplevel": true
+}
