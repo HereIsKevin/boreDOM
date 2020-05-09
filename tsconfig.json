@@ -2,7 +2,7 @@
   "compilerOptions": {
     "outDir": "build",
     "target": "esnext",
-    "strict": true,
+    "strict": true
   },
-  "files": ["./src/boreDOM.ts"]
+  "files": ["./src/boreDOM.ts", "./src/boreElement.ts"]
 }
