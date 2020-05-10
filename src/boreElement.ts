@@ -16,15 +16,21 @@ interface IWindow extends Window {
 
 declare const window: IWindow;
 
+const isElement = (value: any): value is Element =>
+  value instanceof Element;
+
+const isBoreElement = (value: any): value is BoreElement =>
+  value instanceof BoreElement;
+
 class BoreElement {
-  protected mount: Element;
+  protected mount: Element | BoreElement;
 
   private callbacks: { [on: string]: Callback };
   private defaultCallback: Callback;
   private stateInternal: Dictionary;
   private painted: boolean;
 
-  public constructor(mount: Element) {
+  public constructor(mount: Element | BoreElement) {
     this.mount = mount;
 
     this.callbacks = {};
@@ -92,17 +98,31 @@ class BoreElement {
       this.defaultCallback();
     }
 
-    this.paint()
+    this.paint();
+
+    if (isBoreElement(this.mount)) {
+      this.mount.paint();
+    }
   }
 
   public paint(): void {
     this.painted = true;
-    render(this.mount, html(this.render()));
+
+    if (isElement(this.mount)) {
+      render(this.mount, html(this.render()));
+    } else {
+      this.mount.paint();
+    }
   }
 
   public destroy(): void {
     this.painted = false;
-    render(this.mount, html(""));
+
+    if (isElement(this.mount)) {
+      render(this.mount, html(""));
+    } else {
+      this.mount.paint();
+    }
   }
 
   public onMount(): void {}
@@ -120,13 +140,38 @@ class BoreElement {
       window.BoreHandlersIndex++;
     }
 
-    window.BoreHandlers[`handler${window.BoreHandlersIndex}`] = handler;
+    const index = window.BoreHandlersIndex;
 
-    return () => `BoreHandlers.handler${window.BoreHandlersIndex}();`;
+    window.BoreHandlers[`handler${index}`] = handler;
+
+    return () => `BoreHandlers.handler${index}();`;
   }
 
   public render(): string {
     return "";
+  }
+
+  public process(
+    strings: string[],
+    ...elements: (BoreElement | string)[]
+  ): string {
+    let final: string[] = [strings[0]];
+
+    for (let [index, item] of strings.slice(1, strings.length).entries()) {
+      const element: BoreElement | string = elements[index];
+
+      if (isBoreElement(element)) {
+        element.painted = true;
+        final.push(element.render());
+      } else if (typeof element === "string") {
+        final.push(element);
+      }
+
+      final.push(item);
+      index++;
+    }
+
+    return final.join("");
   }
 }
 
