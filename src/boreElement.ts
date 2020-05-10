@@ -2,53 +2,82 @@ export { BoreElement, mount, unmount };
 
 import { html, render } from "./boreDOM.js";
 
+type Dictionary = { [key: string]: any };
+type Callback = () => void;
+
+interface IConstructable<T> {
+  new (...args: any[]): T;
+}
+
+interface IWindow extends Window {
+  BoreHandlers: { [key: string]: Callback };
+  BoreHandlersIndex: number;
+}
+
+declare const window: IWindow;
+
 class BoreElement {
-  protected state: { [key: string]: any };
   protected mount: Element;
-  private callbacks: { [on: string]: () => void };
-  private allCallback: () => void;
+
+  private callbacks: { [on: string]: Callback };
+  private defaultCallback: Callback;
+  private stateInternal: Dictionary;
+  private painted: boolean;
 
   public constructor(mount: Element) {
-    this.state = {};
-    this.callbacks = {};
-    this.allCallback = () => {};
     this.mount = mount;
+
+    this.callbacks = {};
+    this.defaultCallback = () => {};
+    this.stateInternal = {};
+    this.painted = false;
   }
 
-  public bind(callback: () => void, on: string | string[] = ""): void {
+  public bind(callback: Callback, on: string = ""): void {
     if (on === "") {
-      this.allCallback = callback;
+      this.defaultCallback = callback;
     } else {
-      if (typeof on == "string") {
-        this.callbacks[on] = callback;
-      } else {
-        for (let event of on) {
-          this.callbacks[event] = callback;
-        }
-      }
+      this.callbacks[on] = callback;
     }
   }
 
-  public unbind(item: string | string[] = ""): void {
-    if (typeof item === "string") {
-      if (item === "") {
-        this.allCallback = () => {};
-      } else {
-        delete this.callbacks[item];
-      }
+  public unbind(item: string = ""): void {
+    if (item === "") {
+      this.defaultCallback = () => {};
     } else {
-      for (let event of item) {
-        delete this.callbacks[event];
-      }
+      delete this.callbacks[item];
     }
   }
 
-  public getState(property: string): any {
-    return this.state[property];
+  public get state(): Dictionary {
+    return new Proxy(this.stateInternal, {
+      get: (target: Dictionary, name: string): any => target[name],
+      set: (
+        target: Dictionary,
+        name: string,
+        value: any,
+        receiver: any
+      ): boolean => {
+        target[name] = value;
+        this.runCallback(name);
+        return true;
+      },
+    });
   }
 
-  public setState(property: string, value: any): void {
-    this.state[property] = value;
+  public set state(value: Dictionary) {
+    this.stateInternal = value;
+
+    for (let value of Object.keys(this.stateInternal)) {
+      this.runCallback(value);
+    }
+  }
+
+  private runCallback(property: string): void {
+    if (!this.painted) {
+      return;
+    }
+
     let calledBack: boolean = false;
 
     for (let key of Object.keys(this.callbacks)) {
@@ -60,17 +89,19 @@ class BoreElement {
     }
 
     if (!calledBack) {
-      this.allCallback();
+      this.defaultCallback();
     }
 
-    this.paint();
+    this.paint()
   }
 
   public paint(): void {
+    this.painted = true;
     render(this.mount, html(this.render()));
   }
 
   public destroy(): void {
+    this.painted = false;
     render(this.mount, html(""));
   }
 
@@ -78,9 +109,7 @@ class BoreElement {
 
   public onUnmount(): void {}
 
-  public exports(handler: () => void): () => string {
-    handler = handler.bind(this);
-
+  public exports(handler: Callback): () => string {
     if (typeof window.BoreHandlers === "undefined") {
       window.BoreHandlers = {};
     }
@@ -97,20 +126,26 @@ class BoreElement {
   }
 
   public render(): string {
-    return "<p>Hello, world from boreElement</p>";
+    return "";
   }
 }
 
-interface IWindow extends Window {
-  BoreHandlers: { [key: string]: () => void };
-  BoreHandlersIndex: number;
-}
+/*
+function exports(target: Callback, propertyKey: string, descriptor: PropertyDescriptor): void {
+  if (typeof window.BoreHandlers === "undefined") {
+    window.BoreHandlers = {};
+  }
 
-declare const window: IWindow;
+  if (typeof window.BoreHandlersIndex === "undefined") {
+    window.BoreHandlersIndex = 0;
+  } else {
+    window.BoreHandlersIndex++;
+  }
 
-interface IConstructable<T> {
-  new (...args: any[]): T;
+  window.BoreHandlers[`handler${window.BoreHandlers}`] = descriptor.value;
+  descriptor.value = () => `BoreHandlers.handler${window.BoreHandlersIndex}()`;
 }
+*/
 
 function mount<T extends BoreElement>(
   parent: Element,
