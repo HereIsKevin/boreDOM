@@ -7,12 +7,12 @@ class Counter extends BoreElement {
     this.state = { seconds: 0 };
     this.interval = undefined;
 
-    this.onClick = this.exports(this.onClick);
+    this.onClick = this.exports(this.onClick.bind(this));
   }
 
   onMount() {
     this.interval = setInterval(
-      () => this.setState("seconds", this.state["seconds"] + 1),
+      () => this.state["seconds"]++,
       1000
     );
   }
