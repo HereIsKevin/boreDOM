@@ -12,6 +12,14 @@ function isCommentNode(node: Node): node is Comment {
   return node.nodeType === Node.COMMENT_NODE;
 }
 
+/**
+ * Generates HTML nodes as a document fragment from strings
+ *
+ * @param template The string to be converted into HTML nodes
+ *
+ * @returns The HTML nodes as a document fragment
+ */
+
 function html(template: string): DocumentFragment {
   return document.createRange().createContextualFragment(template);
 }
@@ -134,6 +142,13 @@ function patchNode(oldNode: Node, newNode: Node): void {
     );
   }
 }
+
+/**
+ * Diffs and updates a DOM node to be the same as another DOM node
+ *
+ * @param oldElement Original DOM node
+ * @param newElement New node for the original node to be updated into
+ */
 
 function render(oldElement: Node, newElement: Node): void {
   sanitizeNode(oldElement);
