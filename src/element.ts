@@ -16,8 +16,7 @@ interface IWindow extends Window {
 
 declare const window: IWindow;
 
-const isElement = (value: any): value is Element =>
-  value instanceof Element;
+const isElement = (value: any): value is Element => value instanceof Element;
 
 const isBoreElement = (value: any): value is BoreElement =>
   value instanceof BoreElement;
