@@ -1,4 +1,4 @@
-import { BoreElement, mount, unmount } from "/build/boreElement.js";
+import { BoreElement, mount, unmount } from "/build/boreDOM.js";
 
 class StopwatchApp extends BoreElement {
   constructor(mount) {

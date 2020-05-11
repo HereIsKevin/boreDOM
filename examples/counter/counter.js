@@ -1,4 +1,4 @@
-import { BoreElement, mount } from "/build/boreElement.js";
+import { BoreElement, mount } from "/build/boreDOM.js";
 
 class Counter extends BoreElement {
   constructor(mount) {
