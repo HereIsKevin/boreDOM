@@ -1,12 +1,36 @@
 export { html, render };
 
+/**
+ * Type guard for checking of a node is a text node
+ *
+ * @param node Node to be checked
+ *
+ * @returns Node is text node or not
+ */
+
 function isTextNode(node: Node): node is Text {
   return node.nodeType === Node.TEXT_NODE;
 }
 
+/**
+ * Type guard for checking of a node is an element node
+ *
+ * @param node Node to be checked
+ *
+ * @returns Node is element node or not
+ */
+
 function isElementNode(node: Node): node is Element {
   return node.nodeType === Node.ELEMENT_NODE;
 }
+
+/**
+ * Type guard for checking of a node is a comment node
+ *
+ * @param node Node to be checked
+ *
+ * @returns Node is comment node or not
+ */
 
 function isCommentNode(node: Node): node is Comment {
   return node.nodeType === Node.COMMENT_NODE;
@@ -23,6 +47,12 @@ function isCommentNode(node: Node): node is Comment {
 function html(template: string): DocumentFragment {
   return document.createRange().createContextualFragment(template);
 }
+
+/**
+ * Removes empty text nodes, comment nodes, or other useless nodes
+ *
+ * @param element Node or element to be sanitized
+ */
 
 function sanitizeNode(element: Node): void {
   for (let node of element.childNodes) {
