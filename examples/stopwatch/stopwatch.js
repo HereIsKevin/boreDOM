@@ -17,8 +17,8 @@ class StopwatchApp extends BoreElement {
 
     if (this.state["run"]) {
       this.interval = setInterval(() => {
-        this.view.state["seconds"]++;
-      }, 1000);
+        this.view.state["seconds"] += 0.01;
+      }, 10);
     } else {
       clearInterval(this.interval);
       this.interval = undefined;
@@ -46,7 +46,7 @@ class StopwatchView extends BoreElement {
   }
 
   render() {
-    return `<div>${this.state["seconds"]}</div>`;
+    return `<div>${this.state["seconds"].toFixed(2)}</div>`;
   }
 }
 
