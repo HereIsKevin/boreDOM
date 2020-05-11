@@ -4,5 +4,5 @@
     "target": "esnext",
     "strict": true
   },
-  "files": ["./src/boreDOM.ts", "./src/boreElement.ts"]
+  "include": ["./src/**/*"]
 }
