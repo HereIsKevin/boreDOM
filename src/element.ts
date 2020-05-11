@@ -1,6 +1,6 @@
 export { BoreElement, mount, unmount };
 
-import { html, render } from "./boreDOM.js";
+import { html, render } from "./dom";
 
 type Dictionary = { [key: string]: any };
 type Callback = () => void;
