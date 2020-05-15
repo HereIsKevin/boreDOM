@@ -1,4 +1,7 @@
-import { render, html } from "/build/boreDOM.js";
+import { dom } from "/build/boreDOM.js";
+
+const render = dom.render;
+const html = dom.html;
 
 class ToDo {
   constructor(root) {
