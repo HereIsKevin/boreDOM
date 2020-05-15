@@ -1,15 +1,15 @@
-import { BoreElement, mount, unmount } from "/build/boreDOM.js";
+import { element } from "/build/boreDOM.js";
 
-class StopwatchApp extends BoreElement {
-  constructor(mount) {
-    super(mount);
+class StopwatchApp extends element.Component {
+  constructor(mount, properties) {
+    super(mount, properties);
 
     this.state = { run: false };
-    this.view = new StopwatchView(this);
+    this.view = element.create(StopwatchView);
     this.interval = undefined;
 
-    this.onStartStop = this.exports(this.onStartStop.bind(this));
-    this.onReset = this.exports(this.onReset.bind(this));
+    this.onStartStop = element.exports(this.onStartStop.bind(this));
+    this.onReset = element.exports(this.onReset.bind(this));
   }
 
   onStartStop() {
@@ -30,7 +30,7 @@ class StopwatchApp extends BoreElement {
   }
 
   render() {
-    return this.process`
+    return this.generate`
       ${this.view}
       <button onclick="${this.onStartStop()}">Start/Stop</button>
       <button onclick="${this.onReset()}">Reset</button>
@@ -38,16 +38,25 @@ class StopwatchApp extends BoreElement {
   }
 }
 
-class StopwatchView extends BoreElement {
-  constructor(mount) {
-    super(mount);
+class StopwatchView extends element.Component {
+  constructor(mount, properties) {
+    super(mount, properties);
 
     this.state = { seconds: 0 };
   }
 
   render() {
-    return `<div>${this.state["seconds"].toFixed(2)}</div>`;
+    return this.generate`<div>${element.create(Numbers, {
+      seconds: this.state["seconds"],
+    })}</div>`;
+  }
+  // this.state["seconds"].toFixed(2)
+}
+
+class Numbers extends element.Stateless {
+  render() {
+    return this.properties["seconds"].toFixed(2);
   }
 }
 
-mount(document.getElementById("root"), StopwatchApp);
+element.mount(document.getElementById("root"), element.create(StopwatchApp));

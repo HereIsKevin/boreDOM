@@ -1,16 +1,14 @@
-import { BoreElement, mount } from "/build/boreDOM.js";
+import { element } from "/build/boreDOM.js";
 
-class Counter extends BoreElement {
-  constructor(mount) {
-    super(mount);
+class Counter extends element.Component {
+  constructor(mount, properties) {
+    super(mount, properties);
 
     this.state = { seconds: 0 };
     this.interval = undefined;
 
-    this.onClick = this.exports(this.onClick.bind(this));
-  }
+    this.onClick = element.exports(this.onClick.bind(this));
 
-  onMount() {
     this.interval = setInterval(
       () => this.state["seconds"]++,
       1000
@@ -29,4 +27,4 @@ class Counter extends BoreElement {
   }
 }
 
-mount(document.getElementById("root"), Counter);
+element.mount(document.getElementById("root"), element.create(Counter));
