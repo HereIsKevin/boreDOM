@@ -1,4 +1,4 @@
-export { html, render, element };
+export { dom, element };
 
-import { html, render } from "./dom";
+import * as dom from "./dom";
 import * as element from "./element";
