@@ -3,7 +3,8 @@ export { exports, create, mount, unmount, Stateless, Component };
 import { html, render } from "./dom";
 
 type Dictionary = { [key: string]: any };
-type EventHandler = () => void;
+type StateHandler = () => void;
+type EventHandler = (event?: Event) => void;
 type Mount = Stateless | Element | Component;
 
 interface IMountable<T extends Component | Stateless> {
@@ -100,8 +101,8 @@ class Stateless {
 
 class Component {
   private internalState: Dictionary;
-  private stateHandlers: { [on: string]: EventHandler };
-  private defaultStateHandler: EventHandler;
+  private stateHandlers: { [on: string]: StateHandler };
+  private defaultStateHandler: StateHandler;
 
   protected readonly properties: Dictionary;
 
@@ -120,7 +121,7 @@ class Component {
     this.properties = properties;
   }
 
-  public bindState(handler: EventHandler, on: string = ""): void {
+  public bindState(handler: StateHandler, on: string = ""): void {
     if (on === "") {
       this.defaultStateHandler = handler;
     } else {
@@ -264,7 +265,7 @@ function exports(handler: EventHandler): () => string {
 
   window.BoreHandlers[`handler${index}`] = handler;
 
-  return () => `BoreHandlers.handler${index}();`;
+  return () => `BoreHandlers.handler${index}(event);`;
 }
 
 function create<T extends Component | Stateless>(
