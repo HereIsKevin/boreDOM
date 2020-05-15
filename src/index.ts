@@ -1,4 +1,4 @@
-export { html, render, BoreElement, mount, unmount };
+export { html, render, element };
 
 import { html, render } from "./dom";
-import { BoreElement, mount, unmount } from "./element";
+import * as element from "./element";
