@@ -1,6 +1,6 @@
 {
   "name": "boredom",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Easily manipulating of the DOM without virtual DOM",
   "main": "dist/boreDOM.min.js",
   "scripts": {
