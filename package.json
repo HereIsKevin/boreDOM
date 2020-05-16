@@ -7,11 +7,10 @@
     "watch:tsc": "tsc --watch",
     "watch:rollup": "rollup --watch --config ./rollup.config.js",
     "build:dev": "tsc; rollup --config ./rollup.config.js",
-    "build:release": "tsc; rollup --config ./rollup.config.js; terser --config-file ./terser.json --output ./build/boreDOM.min.js -- ./build/boreDOM.js",
+    "build:release": "tsc; rollup --config ./rollup.config.js; mkdir ./dist/; terser --config-file ./terser.json --output ./dist/boreDOM.min.js -- ./build/boreDOM.js",
     "build:docs": "typedoc ./src/ --out ./docs/",
     "format:check": "prettier --check ./src/",
-    "format:write": "prettier --write ./src/",
-    "install": "npm run build:release"
+    "format:write": "prettier --write ./src/"
   },
   "repository": {
     "type": "git",
