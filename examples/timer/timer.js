@@ -1,5 +1,8 @@
 import { element } from "/build/boreDOM.js";
 
+const alarm = new Audio("alarm.mp3");
+alarm.loop = true;
+
 function toSeconds(value) {
   let seconds = 0;
   let modifiers = {
@@ -128,6 +131,7 @@ class TimerApp extends element.Component {
         this.view.state["seconds"]--;
 
         if (this.view.state["seconds"] <= 0) {
+          alarm.play();
           this.view.state["seconds"] = 0;
           clearInterval(this.interval);
           this.running = false;
@@ -137,6 +141,7 @@ class TimerApp extends element.Component {
   }
 
   onReset() {
+    alarm.pause();
     this.view.reset();
   }
 
