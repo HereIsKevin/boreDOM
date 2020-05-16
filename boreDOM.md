@@ -73,3 +73,66 @@ function findKeepNodes(oldElement, newElement)
 
   return keepNodes
 ```
+
+## Patching Nodes
+
+After the nodes to keep are found, all the nodes have to removed, inserted, or patched.
+
+### Text Nodes
+
+Text nodes are nodes that contain text, unlike element nodes.
+
+```javascript
+function isTextNode(node)
+	nodeType of node == textNode
+```
+
+### Element Nodes
+
+Element nodes are nodes that are element, sometimes having child nodes.
+
+```javascript
+function isElementNode(node)
+	nodeType of node == elementNode
+```
+
+### Patching Attributes and Content
+
+To make two nodes the same, as defined by `isSameNode`, their attributes have to be compared and updated.
+
+```javascript
+function patchAttributes(oldNode, newNode)
+	if (
+		isTextNode oldNode and
+		isTextNode newNode and
+		nodeValue of oldNode != nodeValue of newNode
+	)
+		nodeValue of oldNode = nodeValue of newNode
+	else if isElementNode oldNode and isElementNode newNode
+		for attribute in attributeNames of newNode
+			if attribute of oldNode != attribute of newNode
+				attribute of oldNode = attribute of newNode
+
+		for attribute in attributeNames of oldNode
+			if attribute not in attributes of newNode
+				remove attribute of oldNode
+```
+
+### Patching Nodes
+
+Nodes have to be recursively patched, using `patchAttributes` and other utilities.
+
+```javascript
+function patchNode(oldNode, newNode)
+	for newIndex and oldIndex in findKeepNodes oldNode newNode
+		patchAttributes oldIndex of oldNode newIndex of newNode
+
+		if oldIndex of oldNode != newIndex of newNode
+			patchNode oldIndex of oldNode newIndex of newNode
+
+	for modifier and index in (oldNode not in findKeepNodes oldNode newNode)
+		remove index - modifier of oldNode
+
+	for modifier and index in (newNode not in findKeepNodes oldNode newNode)
+		insert index - modifier of newNode before index of oldNode
+```
