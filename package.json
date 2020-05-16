@@ -2,6 +2,7 @@
   "name": "boredom",
   "version": "0.1.0",
   "description": "Easily manipulating of the DOM without virtual DOM",
+  "main": "dist/boreDOM.min.js",
   "scripts": {
     "clean": "rm ./build/*",
     "watch:tsc": "tsc --watch",
