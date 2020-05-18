@@ -1,4 +1,4 @@
-export { exports, create, mount, unmount, Stateless, Component };
+export { exportHandler, create, mount, unmount, Stateless, Component };
 
 import { html, render } from "./dom";
 
@@ -250,7 +250,7 @@ interface IWindow extends Window {
 
 declare const window: IWindow;
 
-function exports(handler: EventHandler): () => string {
+function exportHandler(handler: EventHandler): () => string {
   if (typeof window.BoreHandlers === "undefined") {
     window.BoreHandlers = {};
   }
