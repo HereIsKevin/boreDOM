@@ -7,7 +7,7 @@ class Counter extends element.Component {
     this.state = { seconds: 0 };
     this.interval = undefined;
 
-    this.onClick = element.exports(this.onClick.bind(this));
+    this.onClick = element.exportHandler(this.onClick.bind(this));
 
     this.interval = setInterval(() => this.state["seconds"]++, 1000);
   }

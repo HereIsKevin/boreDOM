@@ -58,8 +58,8 @@ class TimerView extends element.Component {
 
     this.running = false;
 
-    this.onChange = element.exports(this.onChange.bind(this));
-    this.onClick = element.exports(this.onClick.bind(this));
+    this.onChange = element.exportHandler(this.onChange.bind(this));
+    this.onClick = element.exportHandler(this.onClick.bind(this));
   }
 
   reset() {
@@ -117,8 +117,8 @@ class TimerApp extends element.Component {
     this.view = element.create(TimerView);
     this.interval = undefined;
 
-    this.onStartStop = element.exports(this.onStartStop.bind(this));
-    this.onReset = element.exports(this.onReset.bind(this));
+    this.onStartStop = element.exportHandler(this.onStartStop.bind(this));
+    this.onReset = element.exportHandler(this.onReset.bind(this));
   }
 
   onStartStop() {

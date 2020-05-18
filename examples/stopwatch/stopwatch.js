@@ -8,8 +8,8 @@ class StopwatchApp extends element.Component {
     this.view = element.create(StopwatchView);
     this.interval = undefined;
 
-    this.onStartStop = element.exports(this.onStartStop.bind(this));
-    this.onReset = element.exports(this.onReset.bind(this));
+    this.onStartStop = element.exportHandler(this.onStartStop.bind(this));
+    this.onReset = element.exportHandler(this.onReset.bind(this));
   }
 
   onStartStop() {
