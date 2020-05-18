@@ -19,7 +19,7 @@ Check out `example/todo` for a simple example powered by boreDOM. boreDOM is **e
 <!DOCTYPE html>
 <html>
   <head>
-  	<title>Hello, world!</title>    
+    <title>Hello, world!</title>
   </head>
   <body>
     <div id="root"></div>
