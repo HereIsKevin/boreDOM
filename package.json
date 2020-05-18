@@ -4,11 +4,12 @@
   "description": "Easily manipulating of the DOM without virtual DOM",
   "main": "dist/boreDOM.min.js",
   "scripts": {
-    "clean": "rm ./build/*",
+    "clean": "rm ./build/*; rm ./dist/*",
     "watch:tsc": "tsc --watch",
     "watch:rollup": "rollup --watch --config ./rollup.config.js",
     "build:dev": "tsc; rollup --config ./rollup.config.js",
     "build:release": "tsc; rollup --config ./rollup.config.js; mkdir ./dist/; terser --config-file ./terser.json --output ./dist/boreDOM.min.js -- ./build/boreDOM.js",
+    "build:commonjs": "tsc; rollup ./build/index.js --file ./build/boreDOM.js --format cjs; mkdir ./dist/; terser --mangle --verbose --output ./dist/boreDOM.min.js -- ./build/boreDOM.js",
     "build:docs": "typedoc ./src/ --out ./docs/",
     "format:check": "prettier --check ./src/",
     "format:write": "prettier --write ./src/"
