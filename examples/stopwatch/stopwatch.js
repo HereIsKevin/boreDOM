@@ -1,4 +1,4 @@
-import { element } from "/build/boreDOM.js";
+import { element } from "/dist/index.js";
 
 class StopwatchApp extends element.Component {
   constructor(mount, properties) {

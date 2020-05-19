@@ -1,4 +1,4 @@
-import { element } from "/build/boreDOM.js";
+import { element } from "/dist/index.js";
 
 const alarm = new Audio("alarm.mp3");
 alarm.loop = true;

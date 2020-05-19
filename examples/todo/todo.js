@@ -1,4 +1,4 @@
-import { dom } from "/build/boreDOM.js";
+import { dom } from "/dist/index.js";
 
 const { html, render } = dom;
 
