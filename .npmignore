@@ -1,0 +1,9 @@
+build/
+examples/
+src/
+.gitignore
+.prettierrc.json
+boreDOM.md
+rollup.config.js
+terser.json
+tsconfig.json
