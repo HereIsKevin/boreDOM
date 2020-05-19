@@ -1,7 +1,7 @@
 export default {
   input: "./build/index.js",
   output: {
-    file: "./build/boreDOM.js",
+    file: "./dist/index.js",
     format: "esm",
   },
 };
