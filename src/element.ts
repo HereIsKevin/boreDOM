@@ -1,4 +1,11 @@
-export { exportHandler, create, mount, unmount, Stateless, Component };
+export {
+  exportHandler,
+  create,
+  mount,
+  unmount,
+  Stateless,
+  Component,
+};
 
 import { html, render } from "./dom";
 
@@ -139,19 +146,29 @@ class Component {
   }
 
   public get state(): Dictionary {
-    return new Proxy(this.internalState, {
-      get: (target: Dictionary, name: string): any => target[name],
-      set: (
-        target: Dictionary,
-        name: string,
-        value: any,
-        receiver: any
-      ): boolean => {
-        target[name] = value;
-        this.runCallback(name);
-        return true;
-      },
-    });
+    const proxify = (dictionary: Dictionary): Dictionary => {
+      return new Proxy(dictionary, {
+        get: (target: Dictionary, name: string): any => {
+          if (typeof target[name] !== "object") {
+            return proxify(target[name]);
+          } else {
+            return target[name];
+          }
+        },
+        set: (
+          target: Dictionary,
+          name: string,
+          value: any,
+          receiver: any
+        ): boolean => {
+          target[name] = value;
+          this.runCallback(name);
+          return true;
+        },
+      });
+    };
+
+    return proxify(this.internalState);
   }
 
   public set state(value: Dictionary) {
