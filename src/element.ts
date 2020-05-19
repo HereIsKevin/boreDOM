@@ -149,7 +149,7 @@ class Component {
     const proxify = (dictionary: Dictionary): Dictionary => {
       return new Proxy(dictionary, {
         get: (target: Dictionary, name: string): any => {
-          if (typeof target[name] !== "object") {
+          if (typeof target[name] === "object") {
             return proxify(target[name]);
           } else {
             return target[name];
