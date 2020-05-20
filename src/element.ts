@@ -5,6 +5,11 @@ export {
   unmount,
   Stateless,
   Component,
+  Dictionary,
+  StateHandler,
+  EventHandler,
+  Mount,
+  IMountable,
 };
 
 import { html, render } from "./dom";
