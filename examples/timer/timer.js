@@ -47,8 +47,8 @@ function toText(value) {
 }
 
 class TimerView extends element.Component {
-  constructor(mount, properties) {
-    super(mount, properties);
+  constructor(properties, mount) {
+    super(properties, mount);
 
     this.state = {
       seconds: 0,
@@ -110,8 +110,8 @@ class TimerView extends element.Component {
 }
 
 class TimerApp extends element.Component {
-  constructor(mount, properties) {
-    super(mount, properties);
+  constructor(properties, mount) {
+    super(properties, mount);
 
     this.running = false;
     this.view = element.create(TimerView);

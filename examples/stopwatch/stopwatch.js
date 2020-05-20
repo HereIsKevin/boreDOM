@@ -1,8 +1,8 @@
 import { element } from "/dist/index.js";
 
 class StopwatchApp extends element.Component {
-  constructor(mount, properties) {
-    super(mount, properties);
+  constructor(properties, mount) {
+    super(properties, mount);
 
     this.state = { run: false };
     this.view = element.create(StopwatchView);
@@ -39,8 +39,8 @@ class StopwatchApp extends element.Component {
 }
 
 class StopwatchView extends element.Component {
-  constructor(mount, properties) {
-    super(mount, properties);
+  constructor(properties, mount) {
+    super(properties, mount);
 
     this.state = { seconds: 0 };
   }

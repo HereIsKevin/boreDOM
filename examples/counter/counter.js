@@ -1,8 +1,8 @@
 import { element } from "/dist/index.js";
 
 class Counter extends element.Component {
-  constructor(mount, properties) {
-    super(mount, properties);
+  constructor(properties, mount) {
+    super(properties, mount);
 
     this.state = { seconds: 0 };
     this.interval = undefined;
