@@ -82,7 +82,7 @@ class Stateless {
   }
 
   public generate(
-    strings: string[],
+    strings: TemplateStringsArray,
     ...elements: (Stateless | Component | string)[]
   ): string {
     let final: string[] = [strings[0]];
@@ -236,7 +236,7 @@ class Component {
   }
 
   public generate(
-    strings: string[],
+    strings: TemplateStringsArray,
     ...elements: (Stateless | Component | string)[]
   ): string {
     let final: string[] = [strings[0]];
@@ -293,7 +293,7 @@ function exportHandler(handler: EventHandler): () => string {
 function create<T extends Component | Stateless>(
   component: IMountable<T>,
   properties?: Dictionary
-): Component | Stateless {
+): T {
   return new component(properties || {});
 }
 
