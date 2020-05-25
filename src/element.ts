@@ -16,7 +16,7 @@ import { html, render } from "./dom";
 
 type Dictionary = { [key: string]: any };
 type StateHandler = () => void;
-type EventHandler = (event?: Event) => void;
+type EventHandler = (event: Event) => void;
 type Mount = Stateless | Element | Component;
 
 interface IMountable<T extends Component | Stateless> {
