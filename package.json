@@ -34,9 +34,9 @@
   "homepage": "https://github.com/HereIsKevin/boreDOM#readme",
   "devDependencies": {
     "prettier": "^2.0.5",
-    "rollup": "^2.10.2",
-    "terser": "^4.6.13",
-    "typedoc": "^0.17.6",
-    "typescript": "^3.9.2"
+    "rollup": "^2.10.9",
+    "terser": "^4.7.0",
+    "typedoc": "^0.17.7",
+    "typescript": "^3.9.3"
   }
 }
