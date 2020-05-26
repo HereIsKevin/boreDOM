@@ -1,8 +1,8 @@
 {
   "name": "boredom",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Easily manipulating of the DOM without virtual DOM",
-  "main": "dist/index.min.js",
+  "main": "./dist/index.min.js",
   "scripts": {
     "clean": "rm -rf ./build/; rm -rf ./dist/",
     "watch:tsc": "tsc --watch",
