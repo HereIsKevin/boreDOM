@@ -46,9 +46,11 @@ class StopwatchView extends element.Component {
   }
 
   render() {
-    return this.generate`<div>${element.create(Numbers, {
-      seconds: this.state["seconds"],
-    })}</div>`;
+    return this.generate`
+      <div>
+        ${element.create(Numbers, { seconds: this.state["seconds"] })}
+      </div>
+    `;
   }
   // this.state["seconds"].toFixed(2)
 }

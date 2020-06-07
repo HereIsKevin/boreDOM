@@ -11,11 +11,7 @@ function toSeconds(value) {
     2: 3600,
   };
 
-  for (let [index, part] of value
-    .trim()
-    .split(":")
-    .reverse()
-    .entries()) {
+  for (let [index, part] of value.trim().split(":").reverse().entries()) {
     if (index <= 2 && /^\d+$/.test(part)) {
       seconds += Number(part) * modifiers[index];
     } else {
