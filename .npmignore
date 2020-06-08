@@ -4,6 +4,7 @@ src/
 .gitignore
 .prettierrc.json
 boreDOM.md
-rollup.config.js
+rollup.config.cjs.js
+rollup.config.esm.js
 terser.json
 tsconfig.json
