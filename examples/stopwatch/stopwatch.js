@@ -1,4 +1,4 @@
-import { element } from "/dist/index.js";
+import { element } from "/dist/index.esm.js";
 
 class StopwatchApp extends element.Component {
   constructor(properties, mount) {

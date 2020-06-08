@@ -1,4 +1,4 @@
-import { element } from "/dist/index.js";
+import { element } from "/dist/index.esm.js";
 
 const alarm = new Audio("alarm.mp3");
 alarm.loop = true;
