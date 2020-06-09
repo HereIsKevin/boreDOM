@@ -15,26 +15,29 @@ Run `npm install` then `npm run build:release` to create the final release build
 Check out `example/todo` for a simple example powered by boreDOM. boreDOM is **extremely** simple. Just import `html` and `render` from the one file, then use `html` with a string or template to create the element, and `render` with the parent node and element to be rendered. `render` automatically diffs all elements, so it remains performant even in large applications
 
 **HTML:**
+
 ```html
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Hello, world!</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="hello.js"></script>
-  </body>
+	<head>
+		<title>Hello, world!</title>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script type="module" src="hello.js"></script>
+	</body>
 </html>
 ```
 
 **JavaScript:**
 
 ```javascript
-import { dom } from "/build/boredom.min.js";
+import { dom } from "/dist/index.esm.js";
 
-const { html, render } = dom;
+// or `const { dom } = require("/dist/index.cjs.js");` for CommonJS
+// or `const { dom } = require("boredom");` for Electron
+
 const name = "world";
 
-render(document.getElementById("root"), html(`Hello, ${name}!`));
+dom.render(document.getElementById("root"), dom.html(`Hello, ${name}!`));
 ```
