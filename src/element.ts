@@ -151,29 +151,20 @@ class Component {
   }
 
   public get state(): Dictionary {
-    const proxify = (dictionary: Dictionary): Dictionary => {
-      return new Proxy(dictionary, {
-        get: (target: Dictionary, name: string): any => {
-          if (typeof target[name] === "object") {
-            return proxify(target[name]);
-          } else {
-            return target[name];
-          }
-        },
-        set: (
-          target: Dictionary,
-          name: string,
-          value: any,
-          receiver: any
-        ): boolean => {
-          target[name] = value;
-          this.runCallback(name);
-          return true;
-        },
-      });
-    };
-
-    return proxify(this.internalState);
+    return new Proxy(this.internalState, {
+      get: (target: Dictionary, name: string): any => {
+        return target[name];
+      },
+      set: (
+        target: Dictionary,
+        name: string,
+        value: any,
+      ): boolean => {
+        target[name] = value;
+        this.runCallback(name);
+        return true;
+      },
+    });
   }
 
   public set state(value: Dictionary) {
