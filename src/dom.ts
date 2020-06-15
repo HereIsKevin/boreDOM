@@ -69,18 +69,58 @@ function sanitizeNode(element: Node): void {
   }
 }
 
+/**
+ * Helper function to check if two nodes are identical, checking to see if they
+ * are equal, including their children
+ *
+ * @param node1 First node to be checked
+ * @param node2 Second node to be checked
+ *
+ * @returns First node is identical second node or not
+ */
+
 function isIdenticalNode(node1: Node, node2: Node): boolean {
   return node1.isEqualNode(node2);
 }
+
+/**
+ * Helper function to check if two nodes are the same, checking to see if they
+ * are equal, excluding their children
+ *
+ * @param node1 First node to be checked
+ * @param node2 Second node to be checked
+ *
+ * @returns First node is the same as the second node or not
+ */
 
 function isSameNode(node1: Node, node2: Node): boolean {
   // make shallow clones of nodes to compare, so children are removed
   return node1.cloneNode(false).isEqualNode(node2.cloneNode(false));
 }
 
+/**
+ * Helper function to check if two nodes are related, checking to see if they
+ * have the same name
+ *
+ * @param node1 First node to be checked
+ * @param node2 Second node to be checked
+ *
+ * @returns First node has the same name as the second node or not
+ */
+
 function isRelatedNode(node1: Node, node2: Node): boolean {
   return node1.nodeName === node2.nodeName;
 }
+
+/**
+ * Compares the children of two nodes to find the nodes to keep
+ *
+ * @param oldElement Original node to be updated
+ * @param newElement New node to be compared to
+ *
+ * @returns Indexes for the child nodes to keep in oldElement and their new
+ *   locations in newElement
+ */
 
 function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
   let filteredNodes: number[][] = [];
@@ -112,6 +152,13 @@ function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
   return keepNodes;
 }
 
+/**
+ * Compares the attributes of two nodes and updates to original node
+ *
+ * @param oldNode Original node to be updated
+ * @param newNode New node to be compared to
+ */
+
 function patchAttributes(oldNode: Node, newNode: Node): void {
   if (
     isTextNode(oldNode) &&
@@ -136,6 +183,14 @@ function patchAttributes(oldNode: Node, newNode: Node): void {
     }
   }
 }
+
+/**
+ * Recursively compares two nodes and their children, patching, removing, and
+ * inserting when necessary
+ *
+ * @param oldNode Original node to be updated
+ * @param newNode New node to be compared to
+ */
 
 function patchNode(oldNode: Node, newNode: Node): void {
   const keepNodes: number[][] = findKeepNodes(oldNode, newNode);
@@ -185,14 +240,17 @@ function render(oldElement: Node, newElement: Node): void {
   sanitizeNode(newElement);
 
   if (oldElement.childNodes.length === 0) {
+    // move all new nodes over if old node does not have any children
     while (newElement.firstChild) {
       oldElement.appendChild(newElement.firstChild);
     }
   } else if (newElement.childNodes.length === 0) {
+    // remove all old nodes over if new node does not have any children
     while (oldElement.lastChild) {
       oldElement.removeChild(oldElement.lastChild);
     }
   } else {
+    // patch the old node otherwise
     patchNode(oldElement, newElement);
   }
 }
