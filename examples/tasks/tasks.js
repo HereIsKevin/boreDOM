@@ -1,4 +1,12 @@
-import { component, dom } from "/dist/index.esm.js";
+import { component } from "/dist/index.esm.js";
+
+class TasksView extends component.Component {
+  static observedAttributes = ["number"];
+
+  render() {
+    return this.html`<p>Count is currently: ${this.properties.number}</p>`;
+  }
+}
 
 class TasksApp extends component.Component {
   static observedAttributes = ["number"];
@@ -6,8 +14,8 @@ class TasksApp extends component.Component {
   constructor() {
     super();
 
-    this.increment = this.exportHandler(this.increment);
-    this.decrement = this.exportHandler(this.decrement);
+    this.decrement = this.decrement.bind(this);
+    this.increment = this.increment.bind(this);
   }
 
   decrement() {
@@ -20,11 +28,12 @@ class TasksApp extends component.Component {
 
   render() {
     return this.html`
-      <p>Count is currently: ${this.properties.number}</p>
-      <button onclick="${this.decrement()}">Decrement</button>
-      <button onclick="${this.increment()}">Increment</button>
+      <tasks-view number="${this.properties.number}"></tasks-view>
+      <button onclick=${this.decrement}>Decrement</button>
+      <button onclick=${this.increment}>Increment</button>
     `;
   }
 }
 
-component.defineElement("tasks-app", TasksApp);
+component.customElement("tasks-app", TasksApp);
+component.customElement("tasks-view", TasksView);
