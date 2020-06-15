@@ -1,23 +1,25 @@
-import { element } from "/dist/index.esm.js";
+import { component } from "/dist/index.esm.js";
 
-class StopwatchApp extends element.Component {
-  constructor(properties, mount) {
-    super(properties, mount);
+class StopwatchApp extends component.Component {
+  constructor() {
+    super();
 
-    this.state = { run: false };
-    this.view = element.create(StopwatchView);
+    this.run = false;
+    this.view = undefined;
     this.interval = undefined;
 
-    this.onStartStop = element.exportHandler(this.onStartStop.bind(this));
-    this.onReset = element.exportHandler(this.onReset.bind(this));
+    this.onStartStop = this.onStartStop.bind(this);
+    this.onReset = this.onReset.bind(this);
   }
 
   onStartStop() {
-    this.state["run"] = !this.state["run"];
+    this.view = this.shadow.children[0];
+    this.run = !this.run;
 
-    if (this.state["run"]) {
+    if (this.run) {
       this.interval = setInterval(() => {
-        this.view.state["seconds"] += 0.01;
+        this.view.properties.seconds =
+          Number(this.view.properties.seconds) + 0.01;
       }, 10);
     } else {
       clearInterval(this.interval);
@@ -26,39 +28,44 @@ class StopwatchApp extends element.Component {
   }
 
   onReset() {
-    this.view.state["seconds"] = 0;
+    this.view.properties.seconds = 0;
   }
 
   render() {
-    return this.generate`
-      ${this.view}
-      <button onclick="${this.onStartStop()}">Start/Stop</button>
-      <button onclick="${this.onReset()}">Reset</button>
+    return this.html`
+      <stopwatch-view></stopwatch-view>
+      <button onclick=${this.onStartStop}>Start/Stop</button>
+      <button onclick=${this.onReset}>Reset</button>
     `;
   }
 }
 
-class StopwatchView extends element.Component {
-  constructor(properties, mount) {
-    super(properties, mount);
+class StopwatchView extends component.Component {
+  static observedAttributes = ["seconds"];
 
-    this.state = { seconds: 0 };
+  constructor() {
+    super();
+
+    this.properties.seconds = 0;
   }
 
   render() {
-    return this.generate`
-      <div>
-        ${element.create(Numbers, { seconds: this.state["seconds"] })}
-      </div>
+    return this.html`
+      <stopwatch-numbers
+        seconds="${this.properties.seconds}"
+      ></stopwatch-numbers>
     `;
   }
-  // this.state["seconds"].toFixed(2)
 }
 
-class Numbers extends element.Stateless {
+class StopwatchNumbers extends component.Component {
+  static observedAttributes = ["seconds"];
+
   render() {
-    return this.properties["seconds"].toFixed(2);
+    return this.html`<div>${Number(this.properties.seconds).toFixed(2)}</div>`;
   }
 }
 
-element.mount(document.getElementById("root"), element.create(StopwatchApp));
+component.customElement("stopwatch-app", StopwatchApp);
+component.customElement("stopwatch-view", StopwatchView);
+component.customElement("stopwatch-numbers", StopwatchNumbers);
