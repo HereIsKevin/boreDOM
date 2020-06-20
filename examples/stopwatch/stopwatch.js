@@ -13,7 +13,7 @@ class StopwatchApp extends component.Component {
   }
 
   onStartStop() {
-    this.view = this.shadow.children[0];
+    this.view = this.root.children[0];
     this.run = !this.run;
 
     if (this.run) {
@@ -66,6 +66,6 @@ class StopwatchNumbers extends component.Component {
   }
 }
 
-component.customElement("stopwatch-app", StopwatchApp);
-component.customElement("stopwatch-view", StopwatchView);
-component.customElement("stopwatch-numbers", StopwatchNumbers);
+window.customElements.define("stopwatch-app", StopwatchApp);
+window.customElements.define("stopwatch-view", StopwatchView);
+window.customElements.define("stopwatch-numbers", StopwatchNumbers);
