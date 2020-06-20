@@ -1,55 +1,53 @@
-export { boundMethod, customElement, Component };
+export { Component, EventHandler, boundMethod, customElement };
 
 import { html, render } from "./dom";
 
-type Dictionary<T> = { [key: string]: T };
-type Method = (...args: any[]) => any;
 type EventHandler = (event: Event) => void;
-type Primitive = number | string | boolean;
-type ComponentDecorator = <T extends Component>(
-  componentClass: IConstructable<T>
-) => void;
-type ChangeHandler = (newValue: string, oldValue: string) => void;
 
-interface IConstructable<T> {
-  new (...parameters: any[]): T;
+interface Constructable<T> {
+  new (): T;
 }
 
-interface IWindow extends Window {
-  eventHandlers?: Dictionary<EventHandler>;
-  eventHandlersIndex?: number;
+declare global {
+  interface Window {
+    eventHandlers?: { [key: string]: EventHandler };
+    eventHandlersCount?: number;
+  }
 }
-
-declare const window: IWindow;
 
 function boundMethod(
   target: object,
   key: string,
   descriptor: PropertyDescriptor
 ): PropertyDescriptor {
-  let method: Method = descriptor.value;
+  let method: Function = descriptor.value;
+  let cache: Function | undefined = undefined;
+  let updated: boolean = true;
 
   return {
     configurable: true,
-    get(): Method {
-      return method.bind(this);
+    get(): Function {
+      if (updated || typeof cache === "undefined") {
+        const bound = method.bind(this);
+        cache = bound;
+        updated = false;
+        return bound;
+      } else {
+        return cache;
+      }
     },
-    set(value: Method): void {
+    set(value: Function): void {
       method = value;
+      updated = true;
     },
   };
 }
 
 function customElement<T extends Component>(
-  name: string,
-  component?: IConstructable<T>
-): ComponentDecorator | undefined {
-  if (typeof component !== "undefined") {
+  name: string
+): <T extends Component>(component: Constructable<T>) => void {
+  return <T extends Component>(component: Constructable<T>): void =>
     window.customElements.define(name, component);
-  } else {
-    return <T extends Component>(componentClass: IConstructable<T>): void =>
-      window.customElements.define(name, componentClass);
-  }
 }
 
 function eventHandler(handler: EventHandler): string {
@@ -57,34 +55,39 @@ function eventHandler(handler: EventHandler): string {
     window.eventHandlers = {};
   }
 
-  if (typeof window.eventHandlersIndex === "undefined") {
-    window.eventHandlersIndex = 0;
-  } else {
-    window.eventHandlersIndex++;
+  if (typeof window.eventHandlersCount === "undefined") {
+    window.eventHandlersCount = 0;
   }
 
-  const index = window.eventHandlersIndex;
-  window.eventHandlers[`handler${index}`] = handler;
+  const handlerName: string | undefined = Object.keys(
+    window.eventHandlers
+  ).find((key: string): boolean =>
+    typeof window.eventHandlers === "undefined"
+      ? false
+      : window.eventHandlers[key] === handler
+  );
 
-  return `window.eventHandlers.handler${index}(event);`;
-}
+  if (typeof handlerName === "undefined") {
+    window.eventHandlersCount++;
 
-function isPrimitive(value: any): value is Primitive {
-  const type: string = typeof value;
-  return type === "string" || type === "number" || type === "boolean";
+    const count: number = window.eventHandlersCount;
+    window.eventHandlers[`handler${count}`] = handler;
+
+    return `window.eventHandlers.handler${count}`;
+  } else {
+    return `window.eventHandlers.${handlerName}`;
+  }
 }
 
 class Component extends HTMLElement {
-  protected static readonly observedAttributes: string[] = [];
+  protected root: ShadowRoot;
 
-  protected shadow: ShadowRoot;
-  protected changeHandlers: Dictionary<ChangeHandler>;
+  public static observedAttributes: string[];
 
   public constructor() {
     super();
 
-    this.shadow = this.attachShadow({ mode: "open" });
-    this.changeHandlers = {};
+    this.root = this.attachShadow({ mode: "open" });
   }
 
   private connectedCallback(): void {
@@ -101,12 +104,6 @@ class Component extends HTMLElement {
     oldValue: string,
     newValue: string
   ): void {
-    const handler: ChangeHandler | undefined = this.changeHandlers[name];
-
-    if (typeof handler !== "undefined") {
-      handler(oldValue, newValue);
-    }
-
     this.changed(name, oldValue, newValue);
     this.update();
   }
@@ -117,52 +114,32 @@ class Component extends HTMLElement {
 
   protected changed(name: string, oldValue: string, newValue: string): void {}
 
+  protected update(): void {
+    render(this.root, this.render());
+  }
+
+  protected render(): DocumentFragment {
+    return this.html`<p>Hello, world</p>`;
+  }
+
   protected html(
     strings: TemplateStringsArray,
-    ...values: (EventHandler | Primitive | Primitive[])[]
+    ...values: (EventHandler | string)[]
   ): DocumentFragment {
     let output: string[] = [strings[0]];
 
     for (let [index, item] of strings.slice(1, strings.length).entries()) {
-      const code: EventHandler | Primitive | Primitive[] = values[index];
+      const value: EventHandler | string = values[index];
 
-      if (isPrimitive(code)) {
-        output.push(String(code));
-      } else if (Array.isArray(code)) {
-        output.push(code.join(""));
+      if (typeof value === "string") {
+        output.push(value);
       } else {
-        output.push(`"${eventHandler(code)}"`);
+        output.push(`"${eventHandler(value)}(event);"`);
       }
 
       output.push(item);
     }
 
     return html(output.join(""));
-  }
-
-  protected update(): void {
-    render(this.shadow, this.render());
-  }
-
-  protected render(): DocumentFragment {
-    return this.html`<p>Hello, world!</p>`;
-  }
-
-  public get properties(): Dictionary<string> {
-    return new Proxy(
-      {},
-      {
-        get: (target: Dictionary<string>, name: string): string =>
-          this.getAttribute(name) || "",
-        set: (
-          target: Dictionary<string>,
-          name: string,
-          value: string
-        ): boolean => {
-          this.setAttribute(name, value);
-          return true;
-        },
-      }
-    );
   }
 }
