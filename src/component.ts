@@ -15,6 +15,29 @@ declare global {
   }
 }
 
+function html(
+  strings: TemplateStringsArray,
+  ...values: (EventHandler | string | number | boolean)[]
+): DocumentFragment {
+  let output: string[] = [strings[0]];
+
+  for (let [index, item] of strings.slice(1, strings.length).entries()) {
+    const value: EventHandler | string | number | boolean = values[index];
+
+    if (typeof value === "string") {
+      output.push(value);
+    } else if (typeof value === "number" || typeof value === "boolean") {
+      output.push(String(value));
+    } else {
+      output.push(`"${eventHandler(value)}(event);"`);
+    }
+
+    output.push(item);
+  }
+
+  return dom.html(output.join(""));
+}
+
 function boundMethod(
   target: object,
   key: string,
@@ -129,31 +152,10 @@ class Component extends HTMLElement {
   protected changed(name: string, oldValue: string, newValue: string): void {}
 
   protected update(): void {
-    render(this.root, this.render());
+    dom.render(this.root, this.render());
   }
 
   protected render(): DocumentFragment {
-    return this.html`<p>Hello, world</p>`;
-  }
-
-  protected html(
-    strings: TemplateStringsArray,
-    ...values: (EventHandler | string)[]
-  ): DocumentFragment {
-    let output: string[] = [strings[0]];
-
-    for (let [index, item] of strings.slice(1, strings.length).entries()) {
-      const value: EventHandler | string = values[index];
-
-      if (typeof value === "string") {
-        output.push(value);
-      } else {
-        output.push(`"${eventHandler(value)}(event);"`);
-      }
-
-      output.push(item);
-    }
-
-    return html(output.join(""));
+    throw new Error("render is not implemented");
   }
 }
