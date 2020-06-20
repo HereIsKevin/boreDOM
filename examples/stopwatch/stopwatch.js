@@ -32,7 +32,7 @@ class StopwatchApp extends component.Component {
   }
 
   render() {
-    return this.html`
+    return component.html`
       <stopwatch-view></stopwatch-view>
       <button onclick=${this.onStartStop}>Start/Stop</button>
       <button onclick=${this.onReset}>Reset</button>
@@ -50,7 +50,7 @@ class StopwatchView extends component.Component {
   }
 
   render() {
-    return this.html`
+    return component.html`
       <stopwatch-numbers
         seconds="${this.properties.seconds}"
       ></stopwatch-numbers>
@@ -62,7 +62,7 @@ class StopwatchNumbers extends component.Component {
   static observedAttributes = ["seconds"];
 
   render() {
-    return this.html`<div>${Number(this.properties.seconds).toFixed(2)}</div>`;
+    return component.html`<div>${Number(this.properties.seconds).toFixed(2)}</div>`;
   }
 }
 
