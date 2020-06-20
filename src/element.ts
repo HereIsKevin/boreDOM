@@ -155,11 +155,7 @@ class Component {
       get: (target: Dictionary, name: string): any => {
         return target[name];
       },
-      set: (
-        target: Dictionary,
-        name: string,
-        value: any,
-      ): boolean => {
+      set: (target: Dictionary, name: string, value: any): boolean => {
         target[name] = value;
         this.runCallback(name);
         return true;
