@@ -8,24 +8,24 @@ boreDOM is **early beta** software overall. The general algorithm works well, bu
 
 ## Installing
 
-Run `npm install` then `npm run build:release` to create the final release build. The final file should be found in `build/boreDOM.min.js`.
+Run `npm install` then `npm run build:release` to create the final release build. The final files should be found in `dist`. It can also be installed from the NPM package tarball on GitHub.
 
 ## Overview
 
-Check out `example/todo` for a simple example powered by boreDOM. boreDOM is **extremely** simple. Just import `html` and `render` from the one file, then use `html` with a string or template to create the element, and `render` with the parent node and element to be rendered. `render` automatically diffs all elements, so it remains performant even in large applications
+Check out `example/todo` for a simple example powered by boreDOM. boreDOM is **extremely** simple. Just import `html` and `render` from the one file, then use `html` with a string or template to create the element, and `render` with the parent node and element to be rendered. `render` automatically diffs all elements, so it remains performant even in large applications. The element system is being replaced by the component system.
 
 **HTML:**
 
 ```html
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Hello, world!</title>
-	</head>
-	<body>
-		<div id="root"></div>
-		<script type="module" src="hello.js"></script>
-	</body>
+  <head>
+    <title>Hello, world!</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="hello.js"></script>
+  </body>
 </html>
 ```
 
