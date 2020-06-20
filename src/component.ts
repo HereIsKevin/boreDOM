@@ -1,6 +1,6 @@
-export { Component, EventHandler, boundMethod, customElement };
+export { Component, EventHandler, attribute, boundMethod, customElement, html };
 
-import { html, render } from "./dom";
+import * as dom from "./dom";
 
 type EventHandler = (event: Event) => void;
 
@@ -66,6 +66,58 @@ function boundMethod(
   };
 }
 
+function attribute(target: Component, key: string): void {
+  let valueType: "string" | "number" | "boolean" = "string";
+
+  const isValueType = (
+    value: string
+  ): value is "string" | "number" | "boolean" =>
+    value === "string" || value === "number" || value === "boolean";
+
+  Object.defineProperty(target, key, {
+    get(): string | number | boolean {
+      if (this instanceof Component) {
+        const attribute: string | null = this.getAttribute(key);
+
+        if (typeof attribute !== "string") {
+          throw new Error(`attribute ${key} does not exist`);
+        }
+
+        if (valueType === "string") {
+          return String(attribute);
+        } else if (valueType === "number") {
+          return Number(attribute);
+        } else if (valueType === "boolean") {
+          if (attribute === "true") {
+            return true;
+          } else if (attribute === "false") {
+            return false;
+          } else {
+            return Boolean(attribute);
+          }
+        } else {
+          throw new Error(`invalid value type`);
+        }
+      } else {
+        throw new TypeError("attribute decorator must be used on Component");
+      }
+    },
+    set(value: string | number | boolean): void {
+      const currentType = typeof value;
+
+      if (isValueType(currentType)) {
+        valueType = currentType;
+      }
+
+      if (this instanceof Component) {
+        this.setAttribute(key, String(value));
+      } else {
+        throw new TypeError("attribute decorator must be used on Component");
+      }
+    },
+  });
+}
+
 function customElement<T extends Component>(
   name: string
 ): <T extends Component>(component: Constructable<T>) => void {
@@ -105,7 +157,7 @@ function eventHandler(handler: EventHandler): string {
 class Component extends HTMLElement {
   protected root: ShadowRoot;
 
-  public static observedAttributes: string[];
+  public static observedAttributes: string[] = [];
 
   public constructor() {
     super();
