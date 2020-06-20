@@ -4,25 +4,27 @@
 
 import { component } from "/dist/index.esm.js";
 
-const { Component, boundMethod, customElement } = component;
+const { Component, attribute, boundMethod, customElement, html } = component;
 
 @customElement("example-component")
 class ExampleComponent extends Component {
   static observedAttributes = ["count"];
 
+  @attribute count: number = 1;
+
   @boundMethod
   decrement() {
-    this.properties.count = String(Number(this.properties.count) - 1);
+    this.count = this.count - 1;
   }
 
   @boundMethod
   increment() {
-    this.properties.count = String(Number(this.properties.count) + 1);
+    this.count = this.count + 1;
   }
 
   render() {
-    return this.html`
-      <div>${this.properties.count}</div>
+    return html`
+      <div>${this.count}</div>
       <button onclick=${this.decrement}>Decrement</button>
       <button onclick=${this.increment}>Increment</button>
     `;
@@ -55,30 +57,32 @@ var __decorate =
 
 import { component } from "/dist/index.esm.js";
 
-const { Component, boundMethod, customElement } = component;
+const { Component, attribute, boundMethod, customElement, html } = component;
 
-let ExampleComponent = /** @class */ (() => {
-  let ExampleComponent = class ExampleComponent extends Component {
-    decrement() {
-      this.properties.count = String(Number(this.properties.count) - 1);
-    }
-    increment() {
-      this.properties.count = String(Number(this.properties.count) + 1);
-    }
-    render() {
-      return this.html`
-      <div>${this.properties.count}</div>
+let ExampleComponent = class ExampleComponent extends Component {
+  constructor() {
+    super(...arguments);
+    this.count = 1;
+  }
+  decrement() {
+    this.count = this.count - 1;
+  }
+  increment() {
+    this.count = this.count + 1;
+  }
+  render() {
+    return html`
+      <div>${this.count}</div>
       <button onclick=${this.decrement}>Decrement</button>
       <button onclick=${this.increment}>Increment</button>
     `;
-    }
-  };
-  ExampleComponent.observedAttributes = ["count"];
-  __decorate([boundMethod], ExampleComponent.prototype, "decrement", null);
-  __decorate([boundMethod], ExampleComponent.prototype, "increment", null);
-  ExampleComponent = __decorate(
-    [customElement("example-component")],
-    ExampleComponent
-  );
-  return ExampleComponent;
-})();
+  }
+};
+ExampleComponent.observedAttributes = ["count"];
+__decorate([attribute], ExampleComponent.prototype, "count", void 0);
+__decorate([boundMethod], ExampleComponent.prototype, "decrement", null);
+__decorate([boundMethod], ExampleComponent.prototype, "increment", null);
+ExampleComponent = __decorate(
+  [customElement("example-component")],
+  ExampleComponent
+);
