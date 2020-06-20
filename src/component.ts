@@ -90,6 +90,20 @@ class Component extends HTMLElement {
     this.root = this.attachShadow({ mode: "open" });
   }
 
+  public get properties(): { [key: string]: string } {
+    return new Proxy(
+      {},
+      {
+        get: (target: object, name: string): string =>
+          this.getAttribute(name) || "",
+        set: (target: object, name: string, value: string): boolean => {
+          this.setAttribute(name, value);
+          return true;
+        },
+      }
+    );
+  }
+
   private connectedCallback(): void {
     this.connected();
     this.update();
