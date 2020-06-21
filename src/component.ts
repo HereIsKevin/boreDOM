@@ -16,9 +16,9 @@ function html(
   strings: TemplateStringsArray,
   ...values: (EventHandler | string | number | boolean)[]
 ): DocumentFragment {
-  let output: string[] = [strings[0]];
+  const output: string[] = [strings[0]];
 
-  for (let [index, item] of strings.slice(1, strings.length).entries()) {
+  for (const [index, item] of strings.slice(1, strings.length).entries()) {
     const value: EventHandler | string | number | boolean = values[index];
 
     if (typeof value === "string") {
@@ -42,7 +42,7 @@ function boundMethod(
 ): PropertyDescriptor {
   let method: Function = descriptor.value;
   let cache: Function | undefined = undefined;
-  let updated: boolean = true;
+  let updated = true;
 
   return {
     configurable: true,
@@ -64,7 +64,7 @@ function boundMethod(
 }
 
 function attribute(target: Component, key: string): void {
-  let primitiveType: string = "string";
+  let primitiveType = "string";
 
   Object.defineProperty(target, key, {
     get(): string | number | boolean {

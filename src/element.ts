@@ -85,9 +85,9 @@ class Stateless {
     strings: TemplateStringsArray,
     ...elements: (Stateless | Component | string)[]
   ): string {
-    let final: string[] = [strings[0]];
+    const final: string[] = [strings[0]];
 
-    for (let [index, item] of strings.slice(1, strings.length).entries()) {
+    for (const [index, item] of strings.slice(1, strings.length).entries()) {
       const element: Stateless | Component | string = elements[index];
 
       if (isStateless(element) || isComponent(element)) {
@@ -166,7 +166,7 @@ class Component {
   public set state(value: Dictionary) {
     this.internalState = value;
 
-    for (let key of Object.keys(this.internalState)) {
+    for (const key of Object.keys(this.internalState)) {
       this.runCallback(key);
     }
   }
@@ -226,9 +226,9 @@ class Component {
     strings: TemplateStringsArray,
     ...elements: (Stateless | Component | string)[]
   ): string {
-    let final: string[] = [strings[0]];
+    const final: string[] = [strings[0]];
 
-    for (let [index, item] of strings.slice(1, strings.length).entries()) {
+    for (const [index, item] of strings.slice(1, strings.length).entries()) {
       const element: Stateless | Component | string = elements[index];
 
       if (isStateless(element) || isComponent(element)) {

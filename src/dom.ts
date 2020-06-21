@@ -55,7 +55,7 @@ function html(template: string): DocumentFragment {
  */
 
 function sanitizeNode(element: Node): void {
-  for (let node of element.childNodes) {
+  for (const node of element.childNodes) {
     if (
       isCommentNode(node) ||
       (isTextNode(node) && (node.textContent || "").trim() === "")
@@ -123,10 +123,10 @@ function isRelatedNode(node1: Node, node2: Node): boolean {
  */
 
 function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
-  let filteredNodes: number[][] = [];
+  const filteredNodes: number[][] = [];
 
-  for (let [newIndex, newNode] of newElement.childNodes.entries()) {
-    for (let [oldIndex, oldNode] of oldElement.childNodes.entries()) {
+  for (const [newIndex, newNode] of newElement.childNodes.entries()) {
+    for (const [oldIndex, oldNode] of oldElement.childNodes.entries()) {
       if (
         isIdenticalNode(newNode, oldNode) ||
         isSameNode(newNode, oldNode) ||
@@ -138,10 +138,10 @@ function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
     }
   }
 
-  let keepNodes: number[][] = [];
+  const keepNodes: number[][] = [];
   let lastNode: number[] = [-1, -1];
 
-  for (let node of filteredNodes) {
+  for (const node of filteredNodes) {
     if (node[0] > lastNode[0] && node[1] > lastNode[1]) {
       // keep as many nodes compatible with each other as possible
       keepNodes.push(node);
@@ -168,14 +168,14 @@ function patchAttributes(oldNode: Node, newNode: Node): void {
     // update text for text nodes
     oldNode.nodeValue = newNode.nodeValue;
   } else if (isElementNode(oldNode) && isElementNode(newNode)) {
-    for (let attribute of newNode.getAttributeNames()) {
+    for (const attribute of newNode.getAttributeNames()) {
       if (oldNode.getAttribute(attribute) !== newNode.getAttribute(attribute)) {
         // update attribute if it is different
         oldNode.setAttribute(attribute, newNode.getAttribute(attribute) || "");
       }
     }
 
-    for (let attribute of oldNode.getAttributeNames()) {
+    for (const attribute of oldNode.getAttributeNames()) {
       if (!newNode.hasAttribute(attribute)) {
         // remove attributes that are not in the new node
         oldNode.removeAttribute(attribute);
@@ -201,7 +201,7 @@ function patchNode(oldNode: Node, newNode: Node): void {
     (x) => !keepNodes.map((y) => y[0]).includes(x)
   );
 
-  for (let [newIndex, oldIndex] of keepNodes) {
+  for (const [newIndex, oldIndex] of keepNodes) {
     const currentOld: Node = oldNode.childNodes[oldIndex];
     const currentNew: Node = newNode.childNodes[newIndex];
 
@@ -214,12 +214,12 @@ function patchNode(oldNode: Node, newNode: Node): void {
     }
   }
 
-  for (let [modifier, index] of removeNodes.entries()) {
+  for (const [modifier, index] of removeNodes.entries()) {
     // remove item at index - modifier
     oldNode.removeChild(oldNode.childNodes[index - modifier]);
   }
 
-  for (let [modifier, index] of insertNodes.entries()) {
+  for (const [modifier, index] of insertNodes.entries()) {
     // insert items
     oldNode.insertBefore(
       newNode.childNodes[index - modifier],
