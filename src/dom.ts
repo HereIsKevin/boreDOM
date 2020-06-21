@@ -1,3 +1,49 @@
+/**
+ * The "dom" module is a simple, low-level, and fast DOM rendering system with
+ * diffing built in for performance. In order to use it, download it from
+ * [GitHub](https://github.com/HereIsKevin/boreDOM/releases/latest) and extract
+ * it, install the release with `npm install`, or build it from source.
+ *
+ * The two main functions are `html`, which takes a string and turns it into a
+ * HTML elements, and `render`, which updates a node with the output of HTML.
+ * To begin, install boreDOM through the tarball:
+ *
+ * **HTML (index.html)**
+ * ```html
+ * <!DOCTYPE html>
+ * <html>
+ *   <head>
+ *     <title>Hello, world</title>
+ *   </head>
+ *   <body>
+ *     <div id="root"></div>
+ *     <script type="module" src="hello.js"></script
+ *   </body>
+ * </html>
+ * ```
+ *
+ * **JavaScript (hello.js)**
+ * ```javascript
+ * import { dom } from "./path/to/boreDOM.js";
+ *
+ * // path is:
+ * //   - `./package/dist/index.esm.min.js` from extracted package
+ * //   - `./node_modules/boredom/dist/index.esm.min.js` from NPM
+ * //   - `./path/to/boreDOM/dist/index.esm.min.js` from source
+ *
+ * dom.render(
+ *   document.getElementById("root"),
+ *   dom.html("<p>Hello, world from boreDOM!</p>")
+ * )
+ * ```
+ *
+ * Then serve the directory with the example through `python3 -m http.server`
+ * or any other simple static server and got to http://localhost:8000 or
+ * whatever url the static server served to.
+ *
+ * @packageDocumentation
+ */
+
 export { html, render };
 
 /**
