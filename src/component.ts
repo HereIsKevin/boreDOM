@@ -3,10 +3,7 @@ export { Component, EventHandler, attribute, boundMethod, customElement, html };
 import * as dom from "./dom";
 
 type EventHandler = (event: Event) => void;
-
-interface Constructable<T> {
-  new (): T;
-}
+type Constructable<T> = { new (): T };
 
 declare global {
   interface Window {
@@ -67,27 +64,25 @@ function boundMethod(
 }
 
 function attribute(target: Component, key: string): void {
-  let valueType: "string" | "number" | "boolean" = "string";
-
-  const isValueType = (
-    value: string
-  ): value is "string" | "number" | "boolean" =>
-    value === "string" || value === "number" || value === "boolean";
+  let primitiveType: string = "string";
 
   Object.defineProperty(target, key, {
     get(): string | number | boolean {
-      if (this instanceof Component) {
-        const attribute: string | null = this.getAttribute(key);
+      if (!(this instanceof Component)) {
+        throw new TypeError("attribute decorator must be used on Component");
+      }
 
-        if (typeof attribute !== "string") {
-          throw new Error(`attribute ${key} does not exist`);
-        }
+      const attribute: string | null = this.getAttribute(key);
 
-        if (valueType === "string") {
-          return String(attribute);
-        } else if (valueType === "number") {
+      if (typeof attribute !== "string") {
+        throw new Error(`attribute ${key} does not exist`);
+      }
+
+      switch (typeof attribute) {
+        case "number":
           return Number(attribute);
-        } else if (valueType === "boolean") {
+          break;
+        case "boolean":
           if (attribute === "true") {
             return true;
           } else if (attribute === "false") {
@@ -95,19 +90,14 @@ function attribute(target: Component, key: string): void {
           } else {
             return Boolean(attribute);
           }
-        } else {
-          throw new Error(`invalid value type`);
-        }
-      } else {
-        throw new TypeError("attribute decorator must be used on Component");
+          break;
+        default:
+          return String(attribute);
+          break;
       }
     },
     set(value: string | number | boolean): void {
-      const currentType = typeof value;
-
-      if (isValueType(currentType)) {
-        valueType = currentType;
-      }
+      primitiveType = typeof value;
 
       if (this instanceof Component) {
         this.setAttribute(key, String(value));
