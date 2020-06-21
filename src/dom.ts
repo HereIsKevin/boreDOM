@@ -17,7 +17,7 @@
  *   </head>
  *   <body>
  *     <div id="root"></div>
- *     <script type="module" src="hello.js"></script
+ *     <script type="module" src="hello.js"></script>
  *   </body>
  * </html>
  * ```
