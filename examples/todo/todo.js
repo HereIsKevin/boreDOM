@@ -11,7 +11,7 @@ class ToDo {
 
     document
       .getElementById("todo-controls-add")
-      .addEventListener("click", (event) => {
+      .addEventListener("click", () => {
         const content = document.getElementById("todo-controls-content");
         this.items.push([content.value, false]);
         content.value = "";
@@ -69,4 +69,4 @@ class ToDo {
   }
 }
 
-let todo = new ToDo(document.getElementById("root"));
+new ToDo(document.getElementById("root"));

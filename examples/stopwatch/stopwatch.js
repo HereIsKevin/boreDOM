@@ -62,7 +62,9 @@ class StopwatchNumbers extends component.Component {
   static observedAttributes = ["seconds"];
 
   render() {
-    return component.html`<div>${Number(this.properties.seconds).toFixed(2)}</div>`;
+    return component.html`<div>${Number(this.properties.seconds).toFixed(
+      2
+    )}</div>`;
   }
 }
 
