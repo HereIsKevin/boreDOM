@@ -36,17 +36,17 @@ function html(
 }
 
 function boundMethod(
-  target: object,
+  target: Component,
   key: string,
   descriptor: PropertyDescriptor
 ): PropertyDescriptor {
-  let method: Function = descriptor.value;
-  let cache: Function | undefined = undefined;
+  let method: EventHandler = descriptor.value;
+  let cache: EventHandler | undefined = undefined;
   let updated = true;
 
   return {
     configurable: true,
-    get(): Function {
+    get(): EventHandler {
       if (updated || typeof cache === "undefined") {
         const bound = method.bind(this);
         cache = bound;
@@ -56,7 +56,7 @@ function boundMethod(
         return cache;
       }
     },
-    set(value: Function): void {
+    set(value: EventHandler): void {
       method = value;
       updated = true;
     },
@@ -78,7 +78,7 @@ function attribute(target: Component, key: string): void {
         throw new Error(`attribute ${key} does not exist`);
       }
 
-      switch (typeof attribute) {
+      switch (primitiveType) {
         case "number":
           return Number(attribute);
           break;
@@ -159,9 +159,13 @@ class Component extends HTMLElement {
     return new Proxy(
       {},
       {
-        get: (target: object, name: string): string =>
+        get: (target: { [key: string]: string }, name: string): string =>
           this.getAttribute(name) || "",
-        set: (target: object, name: string, value: string): boolean => {
+        set: (
+          target: { [key: string]: string },
+          name: string,
+          value: string
+        ): boolean => {
           this.setAttribute(name, value);
           return true;
         },
@@ -187,11 +191,21 @@ class Component extends HTMLElement {
     this.update();
   }
 
-  protected connected(): void {}
+  protected connected(): void {
+    // optional connected callback to be implemented in subclass
+  }
 
-  protected disconnected(): void {}
+  protected disconnected(): void {
+    // optional disconnected callback to be implemented in subclass
+  }
 
-  protected changed(name: string, oldValue: string, newValue: string): void {}
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+
+  protected changed(name: string, oldValue: string, newValue: string): void {
+    // optional changed callback to be implemented in subclass
+  }
+
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   protected update(): void {
     dom.render(this.root, this.render());

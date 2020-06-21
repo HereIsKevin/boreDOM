@@ -1,5 +1,3 @@
-export { dom, element, component };
-
-import * as dom from "./dom";
-import * as element from "./element";
-import * as component from "./component";
+export * as component from "./component";
+export * as dom from "./dom";
+export * as element from "./element";

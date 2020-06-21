@@ -1,20 +1,20 @@
 export {
-  exportHandler,
-  create,
-  mount,
-  unmount,
-  Stateless,
   Component,
   Dictionary,
-  StateHandler,
   EventHandler,
-  Mount,
   IMountable,
+  Mount,
+  StateHandler,
+  Stateless,
+  create,
+  exportHandler,
+  mount,
+  unmount,
 };
 
 import { html, render } from "./dom";
 
-type Dictionary = { [key: string]: any };
+type Dictionary = { [key: string]: unknown };
 type StateHandler = () => void;
 type EventHandler = (event: Event) => void;
 type Mount = Stateless | Element | Component;
@@ -23,11 +23,11 @@ interface IMountable<T extends Component | Stateless> {
   new (properties: Dictionary, mount?: Mount): T;
 }
 
-function isStateless(value: any): value is Stateless {
+function isStateless(value: unknown): value is Stateless {
   return value instanceof Stateless;
 }
 
-function isComponent(value: any): value is Component {
+function isComponent(value: unknown): value is Component {
   return value instanceof Component;
 }
 
@@ -126,7 +126,9 @@ class Component {
     this.mount = mount;
     this.internalState = {};
     this.stateHandlers = {};
-    this.defaultStateHandler = () => {};
+    this.defaultStateHandler = () => {
+      /* do nothing, placeholder */
+    };
     this.destroyed = false;
     this.rendered = false;
 
@@ -143,7 +145,9 @@ class Component {
 
   public unbindState(on: string = ""): void {
     if (on === "") {
-      this.defaultStateHandler = () => {};
+      this.defaultStateHandler = () => {
+        /* do nothing, placeholder */
+      };
     } else {
       delete this.stateHandlers[on];
     }
@@ -152,10 +156,10 @@ class Component {
 
   public get state(): Dictionary {
     return new Proxy(this.internalState, {
-      get: (target: Dictionary, name: string): any => {
+      get: (target: Dictionary, name: string): unknown => {
         return target[name];
       },
-      set: (target: Dictionary, name: string, value: any): boolean => {
+      set: (target: Dictionary, name: string, value: unknown): boolean => {
         target[name] = value;
         this.runCallback(name);
         return true;
