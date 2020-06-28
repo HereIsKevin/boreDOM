@@ -111,3 +111,6 @@ build/
 
 # Auto-generated documentation
 docs/
+
+# TypeScript output for examples
+examples/**/*.js
