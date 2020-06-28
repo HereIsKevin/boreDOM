@@ -157,7 +157,7 @@ class Component extends HTMLElement {
     this.propertyTypes = {};
   }
 
-  public get properties(): { [key: string]: string } {
+  public get properties(): { [key: string]: string | number | boolean } {
     return new Proxy(
       {},
       {
@@ -190,7 +190,7 @@ class Component extends HTMLElement {
           }
         },
         set: (
-          target: { [key: string]: string },
+          target: { [key: string]: string | number | boolean },
           name: string,
           value: string | number | boolean
         ): boolean => {
@@ -200,6 +200,13 @@ class Component extends HTMLElement {
         },
       }
     );
+  }
+
+  public set properties(properties: { [key: string]: string | number | boolean }) {
+    for (const [name, value] of Object.entries(properties)) {
+      this.propertyTypes[name] = typeof value;
+      this.setAttribute(name, String(value));
+    }
   }
 
   private connectedCallback(): void {
