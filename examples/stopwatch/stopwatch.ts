@@ -1,38 +1,44 @@
-import { component } from "/dist/index.esm.js";
+import { component } from "../../dist/index.esm.js";
 
-class StopwatchApp extends component.Component {
-  constructor() {
-    super();
+const { Component, attribute, boundMethod, customElement, html } = component;
 
-    this.run = false;
-    this.view = undefined;
-    this.interval = undefined;
+@customElement("stopwatch-app")
+class StopwatchApp extends Component {
+  run: boolean = false;
+  interval?: number = undefined;
 
-    this.onStartStop = this.onStartStop.bind(this);
-    this.onReset = this.onReset.bind(this);
-  }
-
+  @boundMethod
   onStartStop() {
-    this.view = this.root.children[0];
+    const view = this.root.children[0];
     this.run = !this.run;
 
+    if (!(view instanceof StopwatchView)) {
+      throw new Error("could not find view");
+    }
+
     if (this.run) {
-      this.interval = setInterval(() => {
-        this.view.properties.seconds =
-          Number(this.view.properties.seconds) + 0.01;
+      this.interval = window.setInterval(() => {
+        view.seconds += 0.01;
       }, 10);
     } else {
-      clearInterval(this.interval);
+      window.clearInterval(this.interval);
       this.interval = undefined;
     }
   }
 
+  @boundMethod
   onReset() {
-    this.view.properties.seconds = 0;
+    const view = this.root.children[0];
+
+    if (!(view instanceof StopwatchView)) {
+      throw new Error("could not find view");
+    }
+
+    view.seconds = 0;
   }
 
   render() {
-    return component.html`
+    return html`
       <stopwatch-view></stopwatch-view>
       <button onclick=${this.onStartStop}>Start/Stop</button>
       <button onclick=${this.onReset}>Reset</button>
@@ -40,34 +46,15 @@ class StopwatchApp extends component.Component {
   }
 }
 
-class StopwatchView extends component.Component {
+@customElement("stopwatch-view")
+class StopwatchView extends Component {
   static observedAttributes = ["seconds"];
 
-  constructor() {
-    super();
-
-    this.properties.seconds = 0;
-  }
+  @attribute seconds: number = 0;
 
   render() {
-    return component.html`
-      <stopwatch-numbers
-        seconds="${this.properties.seconds}"
-      ></stopwatch-numbers>
+    return html`
+      <div>${this.seconds.toFixed(2)}</div>
     `;
   }
 }
-
-class StopwatchNumbers extends component.Component {
-  static observedAttributes = ["seconds"];
-
-  render() {
-    return component.html`<div>${Number(this.properties.seconds).toFixed(
-      2
-    )}</div>`;
-  }
-}
-
-window.customElements.define("stopwatch-app", StopwatchApp);
-window.customElements.define("stopwatch-view", StopwatchView);
-window.customElements.define("stopwatch-numbers", StopwatchNumbers);
