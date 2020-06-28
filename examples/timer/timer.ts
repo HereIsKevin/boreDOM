@@ -7,9 +7,9 @@ alarm.loop = true;
 
 function toSeconds(value: string) {
   let seconds = 0;
-  let modifiers = [1, 60, 3600];
+  const modifiers = [1, 60, 3600];
 
-  for (let [index, part] of value.trim().split(":").reverse().entries()) {
+  for (const [index, part] of value.trim().split(":").reverse().entries()) {
     if (index <= 2 && /^\d+$/.test(part)) {
       seconds += Number(part) * modifiers[index];
     } else {
