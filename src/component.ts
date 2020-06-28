@@ -148,25 +148,54 @@ class Component extends HTMLElement {
   protected root: ShadowRoot;
 
   public static observedAttributes: string[] = [];
+  private propertyTypes: { [key: string]: string };
 
   public constructor() {
     super();
 
     this.root = this.attachShadow({ mode: "open" });
+    this.propertyTypes = {};
   }
 
   public get properties(): { [key: string]: string } {
     return new Proxy(
       {},
       {
-        get: (target: { [key: string]: string }, name: string): string =>
-          this.getAttribute(name) || "",
+        get: (
+          target: { [key: string]: string },
+          name: string
+        ): string | number | boolean => {
+          const attribute: string | null = this.getAttribute(name);
+
+          if (typeof attribute !== "string") {
+            throw new Error(`attribute ${name} does not exist`);
+          }
+
+          switch (this.propertyTypes[name]) {
+            case "number":
+              return Number(attribute);
+              break;
+            case "boolean":
+              if (attribute === "true") {
+                return true;
+              } else if (attribute === "false") {
+                return false;
+              } else {
+                return Boolean(attribute);
+              }
+              break;
+            default:
+              return String(attribute);
+              break;
+          }
+        },
         set: (
           target: { [key: string]: string },
           name: string,
-          value: string
+          value: string | number | boolean
         ): boolean => {
-          this.setAttribute(name, value);
+          this.propertyTypes[name] = typeof value;
+          this.setAttribute(name, String(value));
           return true;
         },
       }
