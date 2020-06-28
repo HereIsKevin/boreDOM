@@ -1,155 +1,150 @@
-import { element } from "/dist/index.esm.js";
+import { component } from "../../dist/index.esm.js";
+
+const { Component, attribute, boundMethod, customElement, html } = component;
 
 const alarm = new Audio("alarm.mp3");
 alarm.loop = true;
 
-function toSeconds(value) {
+function toSeconds(value: string) {
   let seconds = 0;
-  let modifiers = {
-    0: 1,
-    1: 60,
-    2: 3600,
-  };
+  let modifiers = [1, 60, 3600];
 
   for (let [index, part] of value.trim().split(":").reverse().entries()) {
     if (index <= 2 && /^\d+$/.test(part)) {
       seconds += Number(part) * modifiers[index];
     } else {
-      throw "improper format";
+      throw new Error("improper format");
     }
   }
 
   return seconds;
 }
 
-function toText(value) {
-  let rawSeconds = Number(value);
+function toText(value: number) {
   let hours = 0;
   let minutes = 0;
   let seconds = 0;
 
-  hours = Math.floor(rawSeconds / 3600);
-  rawSeconds -= hours * 3600;
-  minutes = Math.floor(rawSeconds / 60);
-  rawSeconds -= minutes * 60;
-  seconds = Math.floor(rawSeconds);
+  hours = Math.floor(value / 3600);
+  value -= hours * 3600;
+  minutes = Math.floor(value / 60);
+  value -= minutes * 60;
+  seconds = Math.floor(value);
 
-  const pad = (value) =>
-    value.length < 2 ? `${"0" * (2 - value.length)}${value}` : value;
-
-  return `${pad(String(hours))}:${pad(String(minutes))}:${pad(
-    String(seconds)
-  )}`;
+  return [hours, minutes, seconds]
+    .map((x) => String(x).padStart(2, "0"))
+    .join(":");
 }
 
-class TimerView extends element.Component {
-  constructor(properties, mount) {
-    super(properties, mount);
+@customElement("timer-view")
+class TimerView extends Component {
+  static observedAttributes = ["seconds", "editable"]
 
-    this.state = {
-      seconds: 0,
-      editable: false,
-      rawValue: "0",
-    };
+  @attribute seconds = 0;
+  @attribute editable = false;
 
-    this.running = false;
-
-    this.onChange = element.exportHandler(this.onChange.bind(this));
-    this.onClick = element.exportHandler(this.onClick.bind(this));
-  }
+  rawValue = "0";
 
   reset() {
-    console.log(this.state["rawValue"]);
-    this.state["seconds"] = toSeconds(this.state["rawValue"]);
+    this.seconds = toSeconds(this.rawValue);
   }
 
-  onChange(event) {
-    if (!this.state["editable"]) {
-      return;
+  @boundMethod
+  onChange(event: Event) {
+    const oldSeconds = this.seconds;
+    const oldRawValue = this.rawValue;
+
+    if (event.target instanceof HTMLDivElement) {
+      this.rawValue = event.target.textContent || "";
     }
 
-    const oldSeconds = this.state["seconds"];
-    const oldRawValue = this.state["rawValue"];
-
-    this.state["rawValue"] = event.target.textContent;
-    this.state["editable"] = false;
+    this.editable = false;
 
     try {
-      this.state["seconds"] = toSeconds(this.state["rawValue"]);
+      this.seconds = toSeconds(this.rawValue);
     } catch (error) {
-      this.state["rawValue"] = oldRawValue;
-      this.state["seconds"] = oldSeconds;
-      return;
+      this.rawValue = oldRawValue;
+      this.seconds = oldSeconds;
     }
   }
 
-  onClick(event) {
-    if (this.running) {
+  @boundMethod
+  onClick(event: Event) {
+    if (this.parentElement instanceof TimerApp && this.parentElement.running) {
       return;
     }
 
-    this.state["editable"] = true;
-    event.target.focus();
+    this.editable = true;
+
+    if (event.target instanceof HTMLDivElement) {
+      event.target.focus()
+    }
   }
 
   render() {
-    return this.generate`
+    return html`
       <div
-        contenteditable="${this.state["editable"]}"
-        onblur="${this.onChange()}"
-        onclick="${this.onClick()}"
+        contenteditable=${this.editable}
+        onblur=${this.onChange}
+        onclick=${this.onClick}
       >
-        ${toText(this.state["seconds"])}
+        ${toText(this.seconds)}
       </div>
     `;
   }
 }
 
-class TimerApp extends element.Component {
-  constructor(properties, mount) {
-    super(properties, mount);
+@customElement("timer-app")
+class TimerApp extends Component {
+  running: boolean = false;
+  interval?: number = undefined;
 
-    this.running = false;
-    this.view = element.create(TimerView);
-    this.interval = undefined;
-
-    this.onStartStop = element.exportHandler(this.onStartStop.bind(this));
-    this.onReset = element.exportHandler(this.onReset.bind(this));
-  }
-
+  @boundMethod
   onStartStop() {
     if (this.running) {
-      clearInterval(this.interval);
+      window.clearInterval(this.interval);
       this.running = false;
     } else {
       this.running = true;
-      this.interval = setInterval(() => {
-        this.view.state["seconds"]--;
+      this.interval = window.setInterval(() => {
+        const view = this.root.children[0];
 
-        if (this.view.state["seconds"] <= 0) {
+        if (!(view instanceof TimerView)) {
+          throw new Error("could not find view");
+        }
+
+        view.seconds--;
+
+        if (view.seconds <= 0) {
           alarm.play();
-          this.view.state["seconds"] = 0;
-          clearInterval(this.interval);
+          view.seconds = 0;
+          window.clearInterval(this.interval);
           this.running = false;
         }
       }, 1000);
     }
   }
 
+  @boundMethod
   onReset() {
     alarm.pause();
-    this.view.reset();
+
+    const view = this.root.children[0];
+
+    if (!(view instanceof TimerView)) {
+      throw new Error("could not find view");
+    }
+
+    view.reset();
   }
 
   render() {
-    return this.generate`
-      ${this.view}
+    return html`
+      <timer-view></timer-view>
       <div>
-        <input type="button" value="Start/Stop" onclick="${this.onStartStop()}">
-        <input type="button" value="Reset" onclick="${this.onReset()}">
+        <input type="button" value="Start/Stop" onclick=${this.onStartStop}>
+        <input type="button" value="Reset" onclick=${this.onReset}>
       </div>
     `;
   }
 }
-
-element.mount(document.getElementById("root"), element.create(TimerApp));
