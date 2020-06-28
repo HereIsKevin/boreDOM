@@ -202,7 +202,9 @@ class Component extends HTMLElement {
     );
   }
 
-  public set properties(properties: { [key: string]: string | number | boolean }) {
+  public set properties(properties: {
+    [key: string]: string | number | boolean;
+  }) {
     for (const [name, value] of Object.entries(properties)) {
       this.propertyTypes[name] = typeof value;
       this.setAttribute(name, String(value));

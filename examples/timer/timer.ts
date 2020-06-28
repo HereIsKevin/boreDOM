@@ -38,7 +38,7 @@ function toText(value: number) {
 
 @customElement("timer-view")
 class TimerView extends Component {
-  static observedAttributes = ["seconds", "editable"]
+  static observedAttributes = ["seconds", "editable"];
 
   @attribute seconds = 0;
   @attribute editable = false;
@@ -77,7 +77,7 @@ class TimerView extends Component {
     this.editable = true;
 
     if (event.target instanceof HTMLDivElement) {
-      event.target.focus()
+      event.target.focus();
     }
   }
 
@@ -142,8 +142,8 @@ class TimerApp extends Component {
     return html`
       <timer-view></timer-view>
       <div>
-        <input type="button" value="Start/Stop" onclick=${this.onStartStop}>
-        <input type="button" value="Reset" onclick=${this.onReset}>
+        <input type="button" value="Start/Stop" onclick=${this.onStartStop} />
+        <input type="button" value="Reset" onclick=${this.onReset} />
       </div>
     `;
   }
