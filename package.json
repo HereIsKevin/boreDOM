@@ -34,7 +34,8 @@
     "format:check": "prettier --check ./src/ ./examples/ ./*.js ./*.json ./*.md",
     "format:write": "prettier --write ./src/ ./examples/ ./*.js ./*.json ./*.md",
     "lint:check": "eslint --ext .ts ./src/",
-    "lint:fix": "eslint --fix --ext .ts ./src/"
+    "lint:fix": "eslint --fix --ext .ts ./src/",
+    "preview": "http-server"
   },
   "repository": {
     "type": "git",
