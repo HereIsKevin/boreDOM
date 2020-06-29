@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tests for boreDOM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css" />
+  </head>
+  <body>
+    <div id="mocha"></div>
+
+    <!-- load and setup chai -->
+    <script src="../node_modules/chai/chai.js"></script>
+    <script type="module">
+      window.assert = chai.assert;
+    </script>
+
+    <!-- load and setup mocha -->
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script type="module">
+      mocha.setup("bdd");
+    </script>
+
+    <!-- load tests -->
+    <script type="module" src="dom.js"></script>
+
+    <!-- run tests -->
+    <script type="module">
+      mocha.run();
+    </script>
+  </body>
+</html>
