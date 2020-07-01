@@ -2,7 +2,7 @@
 
 Performant, simple, and lightweight templates and rendering for making the DOM boring.
 
-`boreDOM` requires ES6 features like proxies and will refuse to run on older browsers on Internet Explorer without extensive patching. Visit https://hereiskevin.github.io/boreDOM/ for documentation.
+`boreDOM` requires ES6 features like proxies and will refuse to run on older browsers on Internet Explorer without extensive patching. Visit https://hereiskevin.github.io/boreDOM/docs/ for documentation.
 
 `boreDOM` is beta software. The general algorithm for rendering implemented is stable and handles most cases well, while remaining fast enough to render at over 100 times per second. The `dom` module is stable enough for production, with full API documentation and some examples. The `component` module is still undergoing development, being stable enough for casual development, but still not quite ready for production.
 
