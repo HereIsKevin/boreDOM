@@ -2,17 +2,67 @@
 
 Performant, simple, and lightweight templates and rendering for making the DOM boring.
 
-## A Warning to the User
+`boreDOM` requires ES6 features like proxies and will refuse to run on older browsers on Internet Explorer without extensive patching. Visit https://hereiskevin.github.io/boreDOM/ for documentation.
 
-boreDOM is **early beta** software overall. The general algorithm works well, but some problems occur in state and attribute management. The core is solid enough and is considered **beta** software, but the components are still being developed and are considered **alpha** software. Rapid development is being made, and the diff system and API are undergoing changes.
+`boreDOM` is beta software. The general algorithm for rendering implemented is stable and handles most cases well, while remaining fast enough to render at over 100 times per second. The `dom` module is stable enough for production, with full API documentation and some examples. The `component` module is still undergoing development, being stable enough for casual development, but still not quite ready for production.
+
+Expect no API changes in the `dom` module, but be aware the API of the `component` module is subject to change, though it should remain close to the same. The old `element` module, the predecessor of the `component` module has been fully removed since `v0.6.0`, please use `v0.5.0` for the latest version of the `element` module if you require it. It is deprecated and should not be use in new code. The documentation for the `dom` module is mostly complete, though undergoing major changes, while the `component` module lacks proper documentation.
 
 ## Installing
 
-Run `npm install` then `npm run build:release` to create the final release build. The final files should be found in `dist`. It can also be installed from the NPM package tarball on GitHub.
+There are multiple ways to install `boreDOM`, with the easiest being through `npm`.
+
+**With NPM:**
+
+Execute the following command, replacing the `<version>` with the version number, currently `v0.6.0`.
+
+```shell
+npm install https://github.com/HereIsKevin/boreDOM/releases/download/<version>/boredom-<version>.tgz
+```
+
+**Without NPM:**
+
+Go to [the latest release](https://github.com/HereIsKevin/boreDOM/releases/latest/) on GitHub and download `boredom-prebuilt-<version>.zip`, replacing `<version>` with the release version. After extracting it, documentation should be found in the `docs` folder, while the release files should be found in the `dist`. Documentation can be download alone from `boredom-docs-<version>.zip` on the release page.
+
+**From Source:**
+
+Open a terminal or shell of your choice with `npm` and `node` on the path. The same commands should work in PowerShell or any POSIX compliant shell.
+
+1. Clone the `master` branch from GitHub with (or download a tarball)
+
+   ```shell
+   git clone https://github.com/HereIsKevin/boreDOM.git
+   ```
+
+2. Go to the directory with, replacing `/path/to/boreDOM/` with the actual path (probably `./boreDOM/`)
+
+   ```shell
+   cd /path/to/boreDOM/
+   ```
+
+3. Install all the build dependencies through `npm`
+
+   ```shell
+   npm install
+   ```
+
+4. Build the release
+
+   ```shell
+   npm run build:release
+   ```
+
+5. Build the documentation (optional)
+
+   ```shell
+   npm run build:docs
+   ```
+
+The release files should be found in the `dist` folder, with the ESM being at `index.esm.min.js` and `index.esm.js`, and the CommonJS being at `index.cjs.min.js` and `index.cjs.js`. TypeScript type definitions are included with the files. The documentation can be found in the `docs` folder. To see the examples, run `npm run preview` and go to https://localhost:5000/, and click `examples`. This is required as ESM modules cannot be loaded through the `file://` protocol.
 
 ## Overview
 
-Check out `example/todo` for a simple example powered by boreDOM. boreDOM is **extremely** simple. Just import `html` and `render` from the one file, then use `html` with a string or template to create the element, and `render` with the parent node and element to be rendered. `render` automatically diffs all elements, so it remains performant even in large applications. The element system is being replaced by the component system.
+Check out `examples/todo` for a simple example powered by boreDOM. boreDOM is **extremely** simple. Just import `html` and `render` from the one file, then use `html` with a string or template to create the element, and `render` with the parent node and element to be rendered. `render` automatically diffs all elements, so it remains performant even in large applications.
 
 **HTML:**
 
