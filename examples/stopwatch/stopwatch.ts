@@ -48,8 +48,6 @@ class StopwatchApp extends Component {
 
 @customElement("stopwatch-view")
 class StopwatchView extends Component {
-  static observedAttributes = ["seconds"];
-
   @attribute seconds: number = 0;
 
   render() {

@@ -4,25 +4,27 @@ const { Component, attribute, boundMethod, customElement, html } = component;
 
 @customElement("example-component")
 class ExampleComponent extends Component {
-  static observedAttributes = ["count"];
-
-  @attribute count: number = 1;
+  @attribute currentCount: number = 1;
+  @attribute blah: number = 1;
 
   @boundMethod
   decrement() {
-    this.count = this.count - 1;
+    this.currentCount = this.currentCount - 1;
   }
 
   @boundMethod
   increment() {
-    this.count = this.count + 1;
+    this.currentCount = this.currentCount + 1;
   }
 
   render() {
     return html`
-      <div>${this.count}</div>
+      <div>${this.currentCount}</div>
       <button onclick=${this.decrement}>Decrement</button>
       <button onclick=${this.increment}>Increment</button>
     `;
   }
 }
+
+window.Component = Component;
+window.ExampleComponent = ExampleComponent;

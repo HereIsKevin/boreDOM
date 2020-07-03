@@ -38,8 +38,6 @@ function toText(value: number) {
 
 @customElement("timer-view")
 class TimerView extends Component {
-  static observedAttributes = ["seconds", "editable"];
-
   @attribute seconds = 0;
   @attribute editable = false;
 

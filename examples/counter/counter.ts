@@ -1,9 +1,9 @@
 import { component } from "../../dist/index.esm.js";
 
-const { Component, html } = component;
+const { Component, attributes, html } = component;
 
 class Counter extends Component {
-  static observedAttributes = ["seconds"];
+  static observedAttributes = attributes(["seconds"]);
 
   constructor() {
     super();
