@@ -1,4 +1,12 @@
-export { Component, EventHandler, attribute, boundMethod, customElement, html };
+export {
+  Component,
+  EventHandler,
+  attribute,
+  attributes,
+  boundMethod,
+  customElement,
+  html,
+};
 
 import * as dom from "./dom";
 
@@ -10,6 +18,22 @@ declare global {
     eventHandlers?: { [key: string]: EventHandler };
     eventHandlersCount?: number;
   }
+}
+
+function toKebabCase(value: string): string {
+  if (/[A-Z]/.test(value[0])) {
+    throw new Error("cannot start with uppercase character");
+  }
+
+  if (!/^[A-Za-z]+$/.test(value)) {
+    throw new Error("may only contain alphabetical characters");
+  }
+
+  return value.replace(/[A-Z]/g, "-$&").toLowerCase();
+}
+
+function attributes(value: string[]): string[] {
+  return value.map((x) => toKebabCase(x));
 }
 
 function html(
@@ -66,13 +90,23 @@ function boundMethod(
 function attribute(target: Component, key: string): void {
   let primitiveType = "string";
 
+  if (!target.constructor.hasOwnProperty("observedAttributes")) {
+    Object.defineProperty(target.constructor, "observedAttributes", {
+      value: [],
+    });
+  }
+
+  (target.constructor as typeof Component).observedAttributes.push(
+    toKebabCase(key)
+  );
+
   Object.defineProperty(target, key, {
     get(): string | number | boolean {
       if (!(this instanceof Component)) {
         throw new TypeError("attribute decorator must be used on Component");
       }
 
-      const attribute: string | null = this.getAttribute(key);
+      const attribute: string | null = this.getAttribute(toKebabCase(key));
 
       if (typeof attribute !== "string") {
         throw new Error(`attribute ${key} does not exist`);
@@ -100,7 +134,7 @@ function attribute(target: Component, key: string): void {
       primitiveType = typeof value;
 
       if (this instanceof Component) {
-        this.setAttribute(key, String(value));
+        this.setAttribute(toKebabCase(key), String(value));
       } else {
         throw new TypeError("attribute decorator must be used on Component");
       }
@@ -165,7 +199,7 @@ class Component extends HTMLElement {
           target: { [key: string]: string },
           name: string
         ): string | number | boolean => {
-          const attribute: string | null = this.getAttribute(name);
+          const attribute: string | null = this.getAttribute(toKebabCase(name));
 
           if (typeof attribute !== "string") {
             throw new Error(`attribute ${name} does not exist`);
@@ -195,7 +229,7 @@ class Component extends HTMLElement {
           value: string | number | boolean
         ): boolean => {
           this.propertyTypes[name] = typeof value;
-          this.setAttribute(name, String(value));
+          this.setAttribute(toKebabCase(name), String(value));
           return true;
         },
       }
@@ -207,7 +241,7 @@ class Component extends HTMLElement {
   }) {
     for (const [name, value] of Object.entries(properties)) {
       this.propertyTypes[name] = typeof value;
-      this.setAttribute(name, String(value));
+      this.setAttribute(toKebabCase(name), String(value));
     }
   }
 
