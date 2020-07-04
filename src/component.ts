@@ -1,17 +1,6 @@
-export {
-  Component,
-  EventHandler,
-  attribute,
-  attributes,
-  boundMethod,
-  customElement,
-  html,
-};
+export { Component, html, bound, property, element };
 
 import * as dom from "./dom";
-
-type EventHandler = (event: Event) => void;
-type Constructable<T> = { new (): T };
 
 declare global {
   interface Window {
@@ -20,144 +9,30 @@ declare global {
   }
 }
 
-function toKebabCase(value: string): string {
-  if (/[A-Z]/.test(value[0])) {
-    throw new Error("cannot start with uppercase character");
-  }
-
-  if (!/^[A-Za-z]+$/.test(value)) {
-    throw new Error("may only contain alphabetical characters");
-  }
-
-  return value.replace(/[A-Z]/g, "-$&").toLowerCase();
+interface Component {
+  constructor: typeof Component;
 }
 
-function attributes(value: string[]): string[] {
-  return value.map((x) => toKebabCase(x));
+type EventHandler = <T extends Event>(event: T) => void;
+type Constructable<T> = new () => T;
+type Primitive = string | number | boolean;
+
+function isPrimitive(value: unknown): value is Primitive {
+  return ["string", "number", "boolean"].includes(typeof value);
 }
 
-function html(
-  strings: TemplateStringsArray,
-  ...values: (EventHandler | string | number | boolean)[]
-): DocumentFragment {
-  const output: string[] = [strings[0]];
-
-  for (const [index, item] of strings.slice(1, strings.length).entries()) {
-    const value: EventHandler | string | number | boolean = values[index];
-
-    if (typeof value === "string") {
-      output.push(value);
-    } else if (typeof value === "number" || typeof value === "boolean") {
-      output.push(String(value));
-    } else {
-      output.push(`"${eventHandler(value)}(event);"`);
-    }
-
-    output.push(item);
-  }
-
-  return dom.html(output.join(""));
-}
-
-function boundMethod(
-  target: Component,
-  key: string,
-  descriptor: PropertyDescriptor
-): PropertyDescriptor {
-  let method: EventHandler = descriptor.value;
-  let cache: EventHandler | undefined = undefined;
-  let updated = true;
-
-  return {
-    configurable: true,
-    get(): EventHandler {
-      if (updated || typeof cache === "undefined") {
-        const bound = method.bind(this);
-        cache = bound;
-        updated = false;
-        return bound;
-      } else {
-        return cache;
-      }
-    },
-    set(value: EventHandler): void {
-      method = value;
-      updated = true;
-    },
-  };
-}
-
-function attribute(target: Component, key: string): void {
-  let primitiveType = "string";
-
-  if (!target.constructor.hasOwnProperty("observedAttributes")) {
-    Object.defineProperty(target.constructor, "observedAttributes", {
-      value: [],
-    });
-  }
-
-  (target.constructor as typeof Component).observedAttributes.push(
-    toKebabCase(key)
-  );
-
-  Object.defineProperty(target, key, {
-    get(): string | number | boolean {
-      if (!(this instanceof Component)) {
-        throw new TypeError("attribute decorator must be used on Component");
-      }
-
-      const attribute: string | null = this.getAttribute(toKebabCase(key));
-
-      if (typeof attribute !== "string") {
-        throw new Error(`attribute ${key} does not exist`);
-      }
-
-      switch (primitiveType) {
-        case "number":
-          return Number(attribute);
-          break;
-        case "boolean":
-          if (attribute === "true") {
-            return true;
-          } else if (attribute === "false") {
-            return false;
-          } else {
-            return Boolean(attribute);
-          }
-          break;
-        default:
-          return String(attribute);
-          break;
-      }
-    },
-    set(value: string | number | boolean): void {
-      primitiveType = typeof value;
-
-      if (this instanceof Component) {
-        this.setAttribute(toKebabCase(key), String(value));
-      } else {
-        throw new TypeError("attribute decorator must be used on Component");
-      }
-    },
-  });
-}
-
-function customElement<T extends Component>(
-  name: string
-): <T extends Component>(component: Constructable<T>) => void {
-  return <T extends Component>(component: Constructable<T>): void =>
-    window.customElements.define(name, component);
-}
-
-function eventHandler(handler: EventHandler): string {
+function bindHandler(handler: EventHandler): string {
+  // initialize handlers object if it does not exist
   if (typeof window.eventHandlers === "undefined") {
     window.eventHandlers = {};
   }
 
+  // initialize count if it does not exist
   if (typeof window.eventHandlersCount === "undefined") {
     window.eventHandlersCount = 0;
   }
 
+  // find name of first matched handler in handlers object
   const handlerName: string | undefined = Object.keys(
     window.eventHandlers
   ).find((key: string): boolean =>
@@ -170,79 +45,170 @@ function eventHandler(handler: EventHandler): string {
     window.eventHandlersCount++;
 
     const count: number = window.eventHandlersCount;
-    window.eventHandlers[`handler${count}`] = handler;
 
-    return `window.eventHandlers.handler${count}`;
+    // bind new handler it does not already exist
+    window.eventHandlers[`handler$${count}`] = handler;
+
+    return `window.eventHandlers.handler$${count}`;
   } else {
+    // return existing handler otherwise
     return `window.eventHandlers.${handlerName}`;
   }
 }
 
-class Component extends HTMLElement {
-  protected root: ShadowRoot;
+function kebabCase(value: string): string {
+  if (/[A-Z]/.test(value[0])) {
+    throw new Error("cannot start with uppercase character");
+  }
 
+  if (!/^[A-Za-z]+$/.test(value)) {
+    throw new Error("may only contain alphabetical characters");
+  }
+
+  // replace all uppercase letters with - plus it, then convert to lowercase
+  return value.replace(/A-Z/g, "-$&").toLowerCase();
+}
+
+function convert(value: string, finalType: string): Primitive {
+  switch (finalType) {
+    case "number":
+      // convert to number with number constructor on number
+      return Number(value);
+      break;
+    case "boolean":
+      // return false for any falsy values, true otherwise
+      return !["0", "null", "undefined", "false", "NaN", ""].includes(value);
+      break;
+    case "string":
+      // return a string on string type
+      return String(value);
+      break;
+    default:
+      // throw error otherwise
+      throw new TypeError("value must be string, number, or boolean");
+      break;
+  }
+}
+
+function bound(
+  target: Component,
+  key: string,
+  descriptor: PropertyDescriptor
+): PropertyDescriptor {
+  let cache: EventHandler | undefined;
+  let method: EventHandler = descriptor.value;
+  let updated: boolean = true;
+
+  return {
+    configurable: true,
+    get(): EventHandler {
+      if (updated || typeof cache === "undefined") {
+        cache = method.bind(this);
+        updated = false;
+      }
+
+      return cache;
+    },
+    set(value: EventHandler): void {
+      method = value;
+      updated = true;
+    },
+  };
+}
+
+function property(target: Component, key: string): void {
+  // prepare property type cache for automatic type conversion
+  let propertyType: string = "string";
+
+  // define observedAttributes for component subclass if it does not exist to
+  // prevent adding attribute watching to parent component class
+  if (!target.constructor.hasOwnProperty("observedAttributes")) {
+    Object.defineProperty(target.constructor, "observedAttributes", {
+      value: [],
+    });
+  }
+
+  // push property to observed if not already observed
+  if (!target.constructor.observedAttributes.includes(kebabCase(key))) {
+    target.constructor.observedAttributes.push(kebabCase(key));
+  }
+
+  Object.defineProperty(target, key, {
+    get(): Primitive {
+      if (!(this instanceof Component)) {
+        throw new TypeError("property decorator must be used on Component");
+      }
+
+      // convert to kebab case before retrieving attribute
+      const attribute: string | null = this.getAttribute(kebabCase(key));
+
+      if (typeof attribute !== "string") {
+        throw new Error(`attribute ${key} does not exist`);
+      }
+
+      // convert attribute with cached type
+      return convert(attribute, propertyType);
+    },
+    set(value: Primitive): void {
+      if (!isPrimitive(value)) {
+        throw new TypeError("value must be string, number, or boolean");
+      }
+
+      // cache current value type
+      propertyType = typeof value;
+
+      if (this instanceof Component) {
+        // stringify before setting attribute
+        this.setAttribute(kebabCase(key), String(value));
+      } else {
+        throw new TypeError("property decorator must be used on component");
+      }
+    },
+  });
+}
+
+function element<T extends Component>(
+  name: string
+): <T extends Component>(component: Constructable<T>) => void {
+  return <T extends Component>(component: Constructable<T>): void =>
+    window.customElements.define(name, component);
+}
+
+function html(
+  strings: TemplateStringsArray,
+  ...values: (EventHandler | Primitive)[]
+): DocumentFragment {
+  // take leading string first
+  const output: string[] = [strings[0]];
+
+  // process value push, then push next string from strings
+  for (const [index, item] of strings.slice(1, strings.length).entries()) {
+    const value: EventHandler | Primitive = values[index];
+
+    if (isPrimitive(value)) {
+      // stringify types all types except event handlers automatically
+      output.push(String(value));
+    } else {
+      // bind and process event handlers
+      output.push(`"${bindHandler(value)}(event);"`);
+    }
+
+    output.push(item);
+  }
+
+  // concat processed strings and generate document fragment
+  return dom.html(output.join(""));
+}
+
+class Component extends HTMLElement {
+  public root: ShadowRoot;
   public static observedAttributes: string[] = [];
-  private propertyTypes: { [key: string]: string };
 
   public constructor() {
     super();
 
+    // initialize shadow root for rendering
     this.root = this.attachShadow({ mode: "open" });
-    this.propertyTypes = {};
-  }
-
-  public get properties(): { [key: string]: string | number | boolean } {
-    return new Proxy(
-      {},
-      {
-        get: (
-          target: { [key: string]: string },
-          name: string
-        ): string | number | boolean => {
-          const attribute: string | null = this.getAttribute(toKebabCase(name));
-
-          if (typeof attribute !== "string") {
-            throw new Error(`attribute ${name} does not exist`);
-          }
-
-          switch (this.propertyTypes[name]) {
-            case "number":
-              return Number(attribute);
-              break;
-            case "boolean":
-              if (attribute === "true") {
-                return true;
-              } else if (attribute === "false") {
-                return false;
-              } else {
-                return Boolean(attribute);
-              }
-              break;
-            default:
-              return String(attribute);
-              break;
-          }
-        },
-        set: (
-          target: { [key: string]: string | number | boolean },
-          name: string,
-          value: string | number | boolean
-        ): boolean => {
-          this.propertyTypes[name] = typeof value;
-          this.setAttribute(toKebabCase(name), String(value));
-          return true;
-        },
-      }
-    );
-  }
-
-  public set properties(properties: {
-    [key: string]: string | number | boolean;
-  }) {
-    for (const [name, value] of Object.entries(properties)) {
-      this.propertyTypes[name] = typeof value;
-      this.setAttribute(toKebabCase(name), String(value));
-    }
   }
 
   private connectedCallback(): void {
@@ -263,21 +229,11 @@ class Component extends HTMLElement {
     this.update();
   }
 
-  protected connected(): void {
-    // optional connected callback to be implemented in subclass
-  }
+  protected connected(): void {}
 
-  protected disconnected(): void {
-    // optional disconnected callback to be implemented in subclass
-  }
+  protected disconnected(): void {}
 
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-
-  protected changed(name: string, oldValue: string, newValue: string): void {
-    // optional changed callback to be implemented in subclass
-  }
-
-  /* eslint-enable @typescript-eslint/no-unused-vars */
+  protected changed(name: string, oldValue: string, newValue: string): void {}
 
   protected update(): void {
     dom.render(this.root, this.render());
