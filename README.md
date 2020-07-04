@@ -2,7 +2,7 @@
 
 Performant, simple, and lightweight templates and rendering for making the DOM boring.
 
-`boreDOM` requires ES6 features like proxies and will refuse to run on older browsers on Internet Explorer without extensive patching. Visit https://hereiskevin.github.io/boreDOM/docs/ for documentation.
+`boreDOM` requires ES6 features and will refuse to run on older browsers on Internet Explorer without polyfills and transpiling. If you want to deploy `boreDOM` to older browsers, it is suggested you bundle it and then process it with Babel by yourself. Visit https://hereiskevin.github.io/boreDOM/docs/ for documentation.
 
 `boreDOM` is beta software. The general algorithm for rendering implemented is stable and handles most cases well, while remaining fast enough to render at over 100 times per second. The `dom` module is stable enough for production, with full API documentation and some examples. The `component` module is still undergoing development, being stable enough for casual development, but still not quite ready for production.
 
@@ -52,13 +52,27 @@ Open a terminal or shell of your choice with `npm` and `node` on the path. The s
    npm run build:release
    ```
 
-5. Build the documentation (optional)
+5. Build the documentation
 
    ```shell
    npm run build:docs
    ```
 
-The release files should be found in the `dist` folder, with the ESM being at `index.esm.min.js` and `index.esm.js`, and the CommonJS being at `index.cjs.min.js` and `index.cjs.js`. TypeScript type definitions are included with the files. The documentation can be found in the `docs` folder. To see the examples, run `npm run preview` and go to https://localhost:5000/, and click `examples`. This is required as ESM modules cannot be loaded through the `file://` protocol.
+6. Build the examples
+
+   ```shell
+   npm run build:examples
+   ```
+
+7. Start the preview server
+
+   ```shell
+   npm run preview
+   ```
+
+8. Go to https://localhost:5000/, then `examples` for examples and `docs` for documentation
+
+The release files should be found in the `dist` folder, with the ESM being at `index.esm.min.js` and `index.esm.js`, and the CommonJS being at `index.cjs.min.js` and `index.cjs.js`. TypeScript type definitions are included with the files. The documentation can be found in the `docs` folder, while the examples should be in the `examples` folder.
 
 ## Overview
 
