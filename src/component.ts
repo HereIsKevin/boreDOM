@@ -97,7 +97,7 @@ function bound(
 ): PropertyDescriptor {
   let cache: EventHandler | undefined;
   let method: EventHandler = descriptor.value;
-  let updated: boolean = true;
+  let updated = true;
 
   return {
     configurable: true,
@@ -118,11 +118,16 @@ function bound(
 
 function property(target: Component, key: string): void {
   // prepare property type cache for automatic type conversion
-  let propertyType: string = "string";
+  let propertyType = "string";
 
   // define observedAttributes for component subclass if it does not exist to
   // prevent adding attribute watching to parent component class
-  if (!target.constructor.hasOwnProperty("observedAttributes")) {
+  if (
+    !Object.prototype.hasOwnProperty.call(
+      target.constructor,
+      "observedAttributes"
+    )
+  ) {
     Object.defineProperty(target.constructor, "observedAttributes", {
       value: [],
     });
@@ -229,11 +234,21 @@ class Component extends HTMLElement {
     this.update();
   }
 
-  protected connected(): void {}
+  protected connected(): void {
+    // user-defined handler for connectedCallback
+  }
 
-  protected disconnected(): void {}
+  protected disconnected(): void {
+    // user-defined handler for disconnectedCallback
+  }
 
-  protected changed(name: string, oldValue: string, newValue: string): void {}
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+
+  protected changed(name: string, oldValue: string, newValue: string): void {
+    // user-defined handler for attributeChangedCallback
+  }
+
+  /* eslint-enable @typescript-eslint/no-unused-vars */
 
   protected update(): void {
     dom.render(this.root, this.render());
