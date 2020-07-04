@@ -1,6 +1,9 @@
 build/
+docs/
 examples/
 src/
+test/
+.eslintrc.js
 .gitignore
 .prettierrc.json
 boreDOM.md
