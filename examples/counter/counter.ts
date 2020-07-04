@@ -12,9 +12,7 @@ class Counter extends Component {
 
   @bound
   onClick() {
-    alert(
-      `You clicked me! Seconds was ${this.seconds} during click.`
-    );
+    alert(`You clicked me! Seconds was ${this.seconds} during click.`);
   }
 
   render() {
