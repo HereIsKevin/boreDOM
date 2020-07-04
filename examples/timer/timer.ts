@@ -1,6 +1,6 @@
 import { component } from "../../dist/index.esm.js";
 
-const { Component, attribute, boundMethod, customElement, html } = component;
+const { Component, property, bound, element, html } = component;
 
 const alarm = new Audio("alarm.mp3");
 alarm.loop = true;
@@ -36,10 +36,10 @@ function toText(value: number) {
     .join(":");
 }
 
-@customElement("timer-view")
+@element("timer-view")
 class TimerView extends Component {
-  @attribute seconds = 0;
-  @attribute editable = false;
+  @property seconds = 0;
+  @property editable = false;
 
   rawValue = "0";
 
@@ -47,7 +47,7 @@ class TimerView extends Component {
     this.seconds = toSeconds(this.rawValue);
   }
 
-  @boundMethod
+  @bound
   onChange(event: Event) {
     const oldSeconds = this.seconds;
     const oldRawValue = this.rawValue;
@@ -66,7 +66,7 @@ class TimerView extends Component {
     }
   }
 
-  @boundMethod
+  @bound
   onClick(event: Event) {
     if (this.parentElement instanceof TimerApp && this.parentElement.running) {
       return;
@@ -92,12 +92,12 @@ class TimerView extends Component {
   }
 }
 
-@customElement("timer-app")
+@element("timer-app")
 class TimerApp extends Component {
   running: boolean = false;
   interval?: number = undefined;
 
-  @boundMethod
+  @bound
   onStartStop() {
     if (this.running) {
       window.clearInterval(this.interval);
@@ -123,7 +123,7 @@ class TimerApp extends Component {
     }
   }
 
-  @boundMethod
+  @bound
   onReset() {
     alarm.pause();
 

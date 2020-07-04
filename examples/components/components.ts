@@ -1,18 +1,17 @@
 import { component } from "../../dist/index.esm.js";
 
-const { Component, attribute, boundMethod, customElement, html } = component;
+const { Component, property, bound, element, html } = component;
 
-@customElement("example-component")
+@element("example-component")
 class ExampleComponent extends Component {
-  @attribute currentCount: number = 1;
-  @attribute blah: number = 1;
+  @property currentCount: number = 1;
 
-  @boundMethod
+  @bound
   decrement() {
     this.currentCount = this.currentCount - 1;
   }
 
-  @boundMethod
+  @bound
   increment() {
     this.currentCount = this.currentCount + 1;
   }
@@ -25,6 +24,3 @@ class ExampleComponent extends Component {
     `;
   }
 }
-
-window.Component = Component;
-window.ExampleComponent = ExampleComponent;

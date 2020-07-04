@@ -1,13 +1,13 @@
 import { component } from "../../dist/index.esm.js";
 
-const { Component, attribute, boundMethod, customElement, html } = component;
+const { Component, property, bound, element, html } = component;
 
-@customElement("stopwatch-app")
+@element("stopwatch-app")
 class StopwatchApp extends Component {
   run: boolean = false;
   interval?: number = undefined;
 
-  @boundMethod
+  @bound
   onStartStop() {
     const view = this.root.children[0];
     this.run = !this.run;
@@ -26,7 +26,7 @@ class StopwatchApp extends Component {
     }
   }
 
-  @boundMethod
+  @bound
   onReset() {
     const view = this.root.children[0];
 
@@ -46,9 +46,9 @@ class StopwatchApp extends Component {
   }
 }
 
-@customElement("stopwatch-view")
+@element("stopwatch-view")
 class StopwatchView extends Component {
-  @attribute seconds: number = 0;
+  @property seconds: number = 0;
 
   render() {
     return html` <div>${this.seconds.toFixed(2)}</div> `;

@@ -1,37 +1,26 @@
 import { component } from "../../dist/index.esm.js";
 
-const { Component, attributes, html } = component;
+const { Component, property, bound, element, html } = component;
 
+@element("counter-app")
 class Counter extends Component {
-  static observedAttributes = attributes(["seconds"]);
+  @property seconds: number = 0;
 
-  constructor() {
-    super();
-
-    this.properties = { seconds: 0 };
-    this.onClick = this.onClick.bind(this);
-
-    window.setInterval(() => {
-      if (typeof this.properties.seconds === "number") {
-        this.properties.seconds++;
-      } else {
-        throw new Error("faulty type conversion");
-      }
-    }, 1000);
+  connected() {
+    window.setInterval(() => this.seconds++, 1000);
   }
 
+  @bound
   onClick() {
     alert(
-      `You clicked me! Seconds was ${this.properties.seconds} during click.`
+      `You clicked me! Seconds was ${this.seconds} during click.`
     );
   }
 
   render() {
     return html`
-      <p>Seconds: ${this.properties.seconds}</p>
+      <p>Seconds: ${this.seconds}</p>
       <input type="button" onclick=${this.onClick} value="Click Me!" />
     `;
   }
 }
-
-window.customElements.define("counter-app", Counter);
