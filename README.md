@@ -1,5 +1,11 @@
 # boreDOM
 
+---
+
+**If you find `boreDOM` to be inspiring, helpful, or even just interesting, please help the project grow by giving it a ⭐️ on [GitHub](https://github.com/HereIsKevin/boreDOM/).**
+
+---
+
 Performant, simple, and lightweight templates and rendering for making the DOM boring.
 
 `boreDOM` requires ES6 features and will refuse to run on older browsers on Internet Explorer without polyfills and transpiling. If you want to deploy `boreDOM` to older browsers, it is suggested you bundle it and then process it with Babel by yourself. Visit https://hereiskevin.github.io/boreDOM/docs/ for documentation.
