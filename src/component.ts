@@ -1,4 +1,4 @@
-export { Component, html, bound, property, element, _testables };
+export { Component, html, bound, property, element, state, _testables };
 
 import * as dom from "./dom";
 
@@ -114,6 +114,53 @@ function bound(
       updated = true;
     },
   };
+}
+
+function proxify(value: any, handler: () => void): any {
+  const validator = {
+    get(target: any, key: string | number | symbol): any {
+      const current: any = target[key];
+
+      if (
+        typeof current === "object" &&
+        current !== null &&
+        (current.constructor === Object || Array.isArray(current))
+      ) {
+        return new Proxy(current, validator);
+      } else {
+        return current;
+      }
+    },
+    set(target: any, key: string | number | symbol, value: any): boolean {
+      target[key] = value;
+      handler();
+      return true;
+    },
+  };
+
+  return new Proxy(value, validator);
+}
+
+function state(target: Component, key: string): void {
+  let stateValue: unknown = undefined;
+
+  Object.defineProperty(target, key, {
+    get(): unknown {
+      if (
+        typeof stateValue === "object" &&
+        stateValue !== null &&
+        (stateValue.constructor === Object || Array.isArray(stateValue))
+      ) {
+        return proxify(stateValue, this.update.bind(this));
+      } else {
+        return stateValue;
+      }
+    },
+    set(value: unknown) {
+      stateValue = value;
+      this.update();
+    },
+  });
 }
 
 function property(target: Component, key: string): void {
