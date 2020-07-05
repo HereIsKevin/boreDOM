@@ -1,24 +1,24 @@
 import { component } from "../../dist/index.esm.js";
 
-const { Component, property, bound, element, html } = component;
+const { Component, property, bound, element, html, state } = component;
 
 @element("example-component")
 class ExampleComponent extends Component {
-  @property currentCount: number = 1;
+  @state data: { [key: string]: number } = { count: 1 };
 
   @bound
   decrement() {
-    this.currentCount = this.currentCount - 1;
+    this.data.count = this.data.count - 1;
   }
 
   @bound
   increment() {
-    this.currentCount = this.currentCount + 1;
+    this.data.count = this.data.count + 1;
   }
 
   render() {
     return html`
-      <div>${this.currentCount}</div>
+      <div>${this.data.count}</div>
       <button onclick=${this.decrement}>Decrement</button>
       <button onclick=${this.increment}>Increment</button>
     `;
