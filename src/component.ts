@@ -116,30 +116,25 @@ function bound(
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isIndexable(value: unknown): value is Record<string, unknown> {
   // check for record by checking if the constructor if the base object
   return (
-    typeof value === "object" && value !== null && value.constructor === Object
+    (typeof value === "object" &&
+      value !== null &&
+      value.constructor === Object) ||
+    Array.isArray(value)
   );
 }
 
-function proxify(value: Structure, handler: () => void): Structure {
+function proxify(
+  value: Record<string, unknown>,
+  handler: () => void
+): Record<string, unknown> {
   return new Proxy(value, {
-    get(target: Structure, key: string | number): unknown {
-      let current: unknown;
+    get(target: Record<string, unknown>, key: string): unknown {
+      const current: unknown = target[key];
 
-      if (typeof key === "number" && Array.isArray(target)) {
-        // allow indexing with number only for arrays
-        current = target[key];
-      } else if (typeof key === "string" && isRecord(target)) {
-        // allow indexing with string only for records
-        current = target[key];
-      } else {
-        // stop on mismatched types
-        throw new TypeError("mismatched key and target types");
-      }
-
-      if (Array.isArray(current) || isRecord(current)) {
+      if (isIndexable(current)) {
         // recursively proxify arrays and records
         proxify(current, handler);
       } else {
@@ -147,17 +142,12 @@ function proxify(value: Structure, handler: () => void): Structure {
         return current;
       }
     },
-    set(target: Structure, key: string | number, value: unknown): boolean {
-      if (typeof key === "number" && Array.isArray(target)) {
-        // allow indexing with number only for arrays
-        target[key] = value;
-      } else if (typeof key === "string" && isRecord(target)) {
-        // allow indexing with string only for records
-        target[key] = value;
-      } else {
-        // stop on mismatched types
-        throw new TypeError("mismatched key and target types");
-      }
+    set(
+      target: Record<string, unknown>,
+      key: string | number,
+      value: unknown
+    ): boolean {
+      target[key] = value;
 
       // run event handler
       handler();
@@ -172,7 +162,7 @@ function state(target: Component, key: string): void {
 
   Object.defineProperty(target, key, {
     get(): unknown {
-      if (Array.isArray(stateValue) || isRecord(stateValue)) {
+      if (isIndexable(stateValue)) {
         // proxify arrays and records
         return proxify(stateValue, this.update.bind(this));
       } else {
@@ -236,8 +226,10 @@ function property(target: Component, key: string): void {
       propertyType = typeof value;
 
       if (this instanceof Component) {
-        // stringify before setting attribute
-        this.setAttribute(kebabCase(key), String(value));
+        if (!this.hasAttribute(kebabCase(key))) {
+          // stringify before setting attribute
+          this.setAttribute(kebabCase(key), String(value));
+        }
       } else {
         throw new TypeError("property decorator must be used on component");
       }
