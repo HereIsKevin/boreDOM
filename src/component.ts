@@ -1,4 +1,4 @@
-export { Component, html, bound, property, element, state, _testables };
+export { Component, bound, element, html, property, state };
 
 import * as dom from "./dom";
 
@@ -331,18 +331,3 @@ class Component extends HTMLElement {
     throw new Error("render is not implemented");
   }
 }
-
-const _testables = {
-  isPrimitive,
-  bindHandler,
-  kebabCase,
-  convert,
-  bound,
-  isRecord,
-  proxify,
-  state,
-  property,
-  element,
-  html,
-  Component,
-};

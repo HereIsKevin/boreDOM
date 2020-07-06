@@ -44,7 +44,7 @@
  * @packageDocumentation
  */
 
-export { _testables, html, render };
+export { html, render };
 
 /**
  * Type guard for checking of a node is a text node
@@ -300,18 +300,3 @@ function render(oldElement: Node, newElement: Node): void {
     patchNode(oldElement, newElement);
   }
 }
-
-const _testables = {
-  isTextNode,
-  isElementNode,
-  isCommentNode,
-  html,
-  sanitizeNode,
-  isIdenticalNode,
-  isSameNode,
-  isRelatedNode,
-  findKeepNodes,
-  patchAttributes,
-  patchNode,
-  render,
-};
