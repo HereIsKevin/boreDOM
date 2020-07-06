@@ -128,35 +128,51 @@ function recursiveProxy(value: Structure, handler: () => void): unknown {
       let current: unknown;
 
       if (Array.isArray(target)) {
+        // pretend key is a number to allow fetching methods
         current = target[key as number];
       } else if (isRecord(target)) {
+        // pretend key is a string to allow strange behavior
         current = target[key as string];
       } else {
+        // throw error if trying to proxy construcable objects or primitives
         throw new TypeError("cannot access properties of proxy target");
       }
 
       if (Array.isArray(current) || isRecord(current)) {
+        // continue proxying if result is a array or record
         return recursiveProxy(current, handler);
       } else {
+        // return value otherwise
         return current;
       }
     },
     set(target: Structure, key: string | number, value: unknown): boolean {
       if (Array.isArray(target)) {
+        // pretend key is a number to allow setting methods
         target[key as number] = value;
       } else if (isRecord(target)) {
+        // pretend key is a string to allow strange behavior
         target[key as string] = value;
       } else {
+        // throw error if constructable object of primitive was somehow proxied
         throw new TypeError("cannot access properties of proxy target");
       }
 
+      // run event handler
       handler();
+
+      // allow normal action to occur
       return true;
     },
   });
 }
 
 function state(target: Component, key: string): void {
+  // types do not matter as much here, as all state does is add proxies, which
+  // should allow strange behavior in order to allow any possible case to pass.
+  // any problems should be caught by the type checker for the decorated
+  // property, all state is is sort of a wrapper.
+
   let stateValue: unknown;
 
   Object.defineProperty(target, key, {
