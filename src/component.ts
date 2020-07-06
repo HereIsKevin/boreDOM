@@ -16,6 +16,7 @@ interface Component {
 type EventHandler = <T extends Event>(event: T) => void;
 type Constructable<T> = new () => T;
 type Primitive = string | number | boolean;
+type Structure = Record<string, unknown> | unknown[];
 
 function isPrimitive(value: unknown): value is Primitive {
   return ["string", "number", "boolean"].includes(typeof value);
@@ -74,19 +75,15 @@ function convert(value: string, finalType: string): Primitive {
     case "number":
       // convert to number with number constructor on number
       return Number(value);
-      break;
     case "boolean":
       // return false for any falsy values, true otherwise
       return !["0", "null", "undefined", "false", "NaN", ""].includes(value);
-      break;
     case "string":
       // return a string on string type
       return String(value);
-      break;
     default:
       // throw error otherwise
       throw new TypeError("value must be string, number, or boolean");
-      break;
   }
 }
 
@@ -103,6 +100,7 @@ function bound(
     configurable: true,
     get(): EventHandler {
       if (updated || typeof cache === "undefined") {
+        // cache bound method if cache is missing or method is updated
         cache = method.bind(this);
         updated = false;
       }
@@ -111,53 +109,81 @@ function bound(
     },
     set(value: EventHandler): void {
       method = value;
+
+      // set method to be updated
       updated = true;
     },
   };
 }
 
-function proxify(value: any, handler: () => void): any {
-  const validator = {
-    get(target: any, key: string | number | symbol): any {
-      const current: any = target[key];
+function isRecord(value: unknown): value is Record<string, unknown> {
+  // check for record by checking if the constructor if the base object
+  return (
+    typeof value === "object" && value !== null && value.constructor === Object
+  );
+}
 
-      if (
-        typeof current === "object" &&
-        current !== null &&
-        (current.constructor === Object || Array.isArray(current))
-      ) {
-        return new Proxy(current, validator);
+function proxify(value: Structure, handler: () => void): Structure {
+  return new Proxy(value, {
+    get(target: Structure, key: string | number): unknown {
+      let current: unknown;
+
+      if (typeof key === "number" && Array.isArray(target)) {
+        // allow indexing with number only for arrays
+        current = target[key];
+      } else if (typeof key === "string" && isRecord(target)) {
+        // allow indexing with string only for records
+        current = target[key];
       } else {
+        // stop on mismatched types
+        throw new TypeError("mismatched key and target types");
+      }
+
+      if (Array.isArray(current) || isRecord(current)) {
+        // recursively proxify arrays and records
+        proxify(current, handler);
+      } else {
+        // return value otherwise
         return current;
       }
     },
-    set(target: any, key: string | number | symbol, value: any): boolean {
-      target[key] = value;
+    set(target: Structure, key: string | number, value: unknown): boolean {
+      if (typeof key === "number" && Array.isArray(target)) {
+        // allow indexing with number only for arrays
+        target[key] = value;
+      } else if (typeof key === "string" && isRecord(target)) {
+        // allow indexing with string only for records
+        target[key] = value;
+      } else {
+        // stop on mismatched types
+        throw new TypeError("mismatched key and target types");
+      }
+
+      // run event handler
       handler();
+
       return true;
     },
-  };
-
-  return new Proxy(value, validator);
+  });
 }
 
 function state(target: Component, key: string): void {
-  let stateValue: unknown = undefined;
+  let stateValue: unknown;
 
   Object.defineProperty(target, key, {
     get(): unknown {
-      if (
-        typeof stateValue === "object" &&
-        stateValue !== null &&
-        (stateValue.constructor === Object || Array.isArray(stateValue))
-      ) {
+      if (Array.isArray(stateValue) || isRecord(stateValue)) {
+        // proxify arrays and records
         return proxify(stateValue, this.update.bind(this));
       } else {
+        // return value otherwise
         return stateValue;
       }
     },
-    set(value: unknown) {
+    set(value: unknown): void {
       stateValue = value;
+
+      // run updater
       this.update();
     },
   });
@@ -219,7 +245,7 @@ function property(target: Component, key: string): void {
   });
 }
 
-function element<T extends Component>(
+function element(
   name: string
 ): <T extends Component>(component: Constructable<T>) => void {
   return <T extends Component>(component: Constructable<T>): void =>
@@ -312,6 +338,9 @@ const _testables = {
   kebabCase,
   convert,
   bound,
+  isRecord,
+  proxify,
+  state,
   property,
   element,
   html,
