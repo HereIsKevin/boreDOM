@@ -122,59 +122,38 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function recordProxy(
-  value: Record<string, unknown>,
-  handler: () => void
-): Record<string, unknown> {
+function recursiveProxy(value: Structure, handler: () => void): unknown {
   return new Proxy(value, {
-    get(target: Record<string, unknown>, key: string): unknown {
-      const current: unknown = target[key];
+    get(target: Structure, key: string | number): unknown {
+      let current: unknown;
 
-      if (Array.isArray(current)) {
-        return arrayProxy(current, handler);
-      } else if (isRecord(current)) {
-        return recordProxy(current, handler);
+      if (Array.isArray(target)) {
+        current = target[Number(key)];
+      } else if (isRecord(target)) {
+        current = target[String(key)];
+      } else {
+        throw new TypeError("cannot access properties of proxy target");
+      }
+
+      if (Array.isArray(current) || isRecord(current)) {
+        return recursiveProxy(current, handler);
       } else {
         return current;
       }
     },
-    set(target: Record<string, unknown>, key: string, value: unknown): boolean {
-      target[key] = value;
-      handler();
-      return true;
-    },
-  });
-}
-
-function arrayProxy(value: unknown[], handler: () => void): unknown[] {
-  return new Proxy(value, {
-    get(target: unknown[], key: number): unknown {
-      const current: unknown = target[key];
-
-      if (Array.isArray(current)) {
-        return arrayProxy(current, handler);
-      } else if (isRecord(current)) {
-        return recordProxy(current, handler);
+    set(target: Structure, key: string | number, value: unknown): boolean {
+      if (Array.isArray(target)) {
+        target[Number(key)] = value;
+      } else if (isRecord(target)) {
+        target[String(key)] = value;
       } else {
-        return current;
+        throw new TypeError("cannot access properties of proxy target");
       }
-    },
-    set(target: unknown[], key: number, value: unknown): boolean {
-      target[key] = value;
+
       handler();
       return true;
     },
   });
-}
-
-function recursiveProxy(value: unknown, handler: () => void): unknown {
-  if (Array.isArray(value)) {
-    return arrayProxy(value, handler);
-  } else if (isRecord(value)) {
-    return recordProxy(value, handler);
-  } else {
-    return value;
-  }
 }
 
 function state(target: Component, key: string): void {
@@ -182,13 +161,17 @@ function state(target: Component, key: string): void {
 
   Object.defineProperty(target, key, {
     get(): unknown {
-      return recursiveProxy(stateValue, this.update.bind(this));
+      if (Array.isArray(stateValue) || isRecord(stateValue)) {
+        return recursiveProxy(stateValue, this.update.bind(this));
+      } else {
+        return stateValue;
+      }
     },
     set(value: unknown): void {
       stateValue = value;
       this.update();
-    }
-  })
+    },
+  });
 }
 
 function property(target: Component, key: string): void {
