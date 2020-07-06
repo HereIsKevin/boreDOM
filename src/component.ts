@@ -196,7 +196,10 @@ function state(target: Component, key: string): void {
 
 function property(target: Component, key: string): void {
   // prepare property type cache for automatic type conversion
-  let propertyType = "string";
+  let propertyType: string = "string";
+
+  // prevent overwriting initial attribute value
+  let initial: boolean = true;
 
   // define observedAttributes for component subclass if it does not exist to
   // prevent adding attribute watching to parent component class
@@ -241,9 +244,11 @@ function property(target: Component, key: string): void {
       propertyType = typeof value;
 
       if (this instanceof Component) {
-        if (!this.hasAttribute(kebabCase(key))) {
+        if (!this.hasAttribute(kebabCase(key)) || !initial) {
           // stringify before setting attribute
           this.setAttribute(kebabCase(key), String(value));
+        } else {
+          initial = false;
         }
       } else {
         throw new TypeError("property decorator must be used on component");
