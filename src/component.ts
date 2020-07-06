@@ -116,17 +116,13 @@ function bound(
   };
 }
 
-function isIndexable(value: unknown): value is Record<string, unknown> {
-  // check for record by checking if the constructor if the base object
+function isRecord(value: unknown): value is Record<string, unknown> {
   return (
-    (typeof value === "object" &&
-      value !== null &&
-      value.constructor === Object) ||
-    Array.isArray(value)
+    typeof value === "object" && value !== null && value.constructor === Object
   );
 }
 
-function proxify(
+function recordProxy(
   value: Record<string, unknown>,
   handler: () => void
 ): Record<string, unknown> {
@@ -134,27 +130,51 @@ function proxify(
     get(target: Record<string, unknown>, key: string): unknown {
       const current: unknown = target[key];
 
-      if (isIndexable(current)) {
-        // recursively proxify arrays and records
-        proxify(current, handler);
+      if (Array.isArray(current)) {
+        return arrayProxy(current, handler);
+      } else if (isRecord(current)) {
+        return recordProxy(current, handler);
       } else {
-        // return value otherwise
         return current;
       }
     },
-    set(
-      target: Record<string, unknown>,
-      key: string | number,
-      value: unknown
-    ): boolean {
+    set(target: Record<string, unknown>, key: string, value: unknown): boolean {
       target[key] = value;
-
-      // run event handler
       handler();
-
       return true;
     },
   });
+}
+
+function arrayProxy(value: unknown[], handler: () => void): unknown[] {
+  return new Proxy(value, {
+    get(target: unknown[], key: number): unknown {
+      const current: unknown = target[key];
+
+      if (Array.isArray(current)) {
+        return arrayProxy(current, handler);
+      } else if (isRecord(current)) {
+        return recordProxy(current, handler);
+      } else {
+        return current;
+      }
+    },
+    set(target: unknown[], key: number, value: unknown): boolean {
+      target[key] = value;
+      handler();
+      return true;
+    },
+  });
+}
+
+function recursiveProxy(value: unknown, handler: () => void): unknown {
+  if (Array.isArray(value)) {
+    return arrayProxy(value, handler);
+  } else if (isRecord(value)) {
+    return recordProxy(value, handler);
+  } else {
+    return value;
+  }
 }
 
 function state(target: Component, key: string): void {
@@ -162,21 +182,13 @@ function state(target: Component, key: string): void {
 
   Object.defineProperty(target, key, {
     get(): unknown {
-      if (isIndexable(stateValue)) {
-        // proxify arrays and records
-        return proxify(stateValue, this.update.bind(this));
-      } else {
-        // return value otherwise
-        return stateValue;
-      }
+      return recursiveProxy(stateValue, this.update.bind(this));
     },
     set(value: unknown): void {
       stateValue = value;
-
-      // run updater
       this.update();
-    },
-  });
+    }
+  })
 }
 
 function property(target: Component, key: string): void {
