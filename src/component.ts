@@ -128,9 +128,9 @@ function recursiveProxy(value: Structure, handler: () => void): unknown {
       let current: unknown;
 
       if (Array.isArray(target)) {
-        current = target[Number(key)];
+        current = target[key as number];
       } else if (isRecord(target)) {
-        current = target[String(key)];
+        current = target[key as string];
       } else {
         throw new TypeError("cannot access properties of proxy target");
       }
@@ -143,9 +143,9 @@ function recursiveProxy(value: Structure, handler: () => void): unknown {
     },
     set(target: Structure, key: string | number, value: unknown): boolean {
       if (Array.isArray(target)) {
-        target[Number(key)] = value;
+        target[key as number] = value;
       } else if (isRecord(target)) {
-        target[String(key)] = value;
+        target[key as string] = value;
       } else {
         throw new TypeError("cannot access properties of proxy target");
       }
@@ -162,13 +162,17 @@ function state(target: Component, key: string): void {
   Object.defineProperty(target, key, {
     get(): unknown {
       if (Array.isArray(stateValue) || isRecord(stateValue)) {
+        // add proxies recursively with updater for arrays and plain objects
         return recursiveProxy(stateValue, this.update.bind(this));
       } else {
+        // return value directly otherwise
         return stateValue;
       }
     },
     set(value: unknown): void {
       stateValue = value;
+
+      // update after setting value
       this.update();
     },
   });
