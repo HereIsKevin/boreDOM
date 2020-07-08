@@ -309,7 +309,10 @@ function isElement(node: Node): node is Element {
   return node.nodeType === Node.ELEMENT_NODE;
 }
 
-function addListeners(node: Node, handlers: Record<string, EventHandler>): void {
+function addListeners(
+  node: Node,
+  handlers: Record<string, EventHandler>
+): void {
   if (!isElement(node)) {
     for (const thing of node.childNodes) {
       addListeners(thing, handlers);
@@ -330,7 +333,10 @@ function addListeners(node: Node, handlers: Record<string, EventHandler>): void 
       continue;
     }
 
-    node.addEventListener(attribute.slice(2, attribute.length), handlers[handlerName]);
+    node.addEventListener(
+      attribute.slice(2, attribute.length),
+      handlers[handlerName]
+    );
 
     for (const childNode of node.children) {
       addListeners(childNode, handlers);
