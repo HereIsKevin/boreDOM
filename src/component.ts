@@ -153,9 +153,6 @@ function state(target: Component, key: string): void {
 }
 
 function property(target: Component, key: string): void {
-  // prepare property type cache for automatic type conversion
-  let propertyType: string = "string";
-
   // define observedAttributes for component subclass if it does not exist to
   // prevent adding attribute watching to parent component class
   if (
@@ -239,7 +236,7 @@ function html(
   const eventHandlers: Record<string, EventHandler> = {};
 
   // current event handler number
-  let handlerIndex: number = 0;
+  let handlerIndex = 0;
 
   // process value push, then push next string from strings
   for (const [index, item] of strings.slice(1, strings.length).entries()) {
