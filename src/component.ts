@@ -238,6 +238,7 @@ function html(
   // event handlers
   const eventHandlers: Record<string, EventHandler> = {};
 
+  // current event handler number
   let handlerIndex: number = 0;
 
   // process value push, then push next string from strings
@@ -248,9 +249,13 @@ function html(
       // stringify types all types except event handlers automatically
       output.push(String(value));
     } else {
-      // bind and process event handlers
-      output.push(`handler$${handlerIndex}`);
+      const handlerName = `handler$${handlerIndex}`;
+
+      // cache handler name in attribute on element
+      output.push(handlerName);
+      // cache actual handler in record
       eventHandlers[`handler$${handlerIndex}`] = value;
+
       handlerIndex++;
     }
 
@@ -259,7 +264,10 @@ function html(
 
   // concat processed strings and generate document fragment
   const result: DocumentFragment = dom.html(output.join(""));
-  addListeners(result, eventHandlers);
+
+  // add event handlers to result
+  addHandlers(result, eventHandlers);
+
   return result;
 }
 
@@ -267,38 +275,35 @@ function isElement(node: Node): node is Element {
   return node.nodeType === Node.ELEMENT_NODE;
 }
 
-function addListeners(
-  node: Node,
-  handlers: Record<string, EventHandler>
-): void {
-  if (!isElement(node)) {
-    for (const thing of node.childNodes) {
-      addListeners(thing, handlers);
-    }
+function addHandlers(node: Node, handlers: Record<string, EventHandler>): void {
+  // add event listeners only to an element node
+  if (isElement(node)) {
+    // get all event names by iterating through "on" prefixed attributes
+    for (const name of node
+      .getAttributeNames()
+      .filter((x: string): boolean => x.slice(0, 2) === "on")) {
+      // retrieve handler name from cache on element attribute
+      const handlerName: string | null = node.getAttribute(name);
 
-    return;
+      // stop if the attribute is somehow missing or handler is missing
+      if (
+        handlerName === null ||
+        !Object.keys(handlers).includes(handlerName)
+      ) {
+        continue;
+      }
+
+      // remove cache after retrieving value
+      node.removeAttribute(name);
+
+      // add event listener to element
+      node.addEventListener(name.slice(2), handlers[handlerName]);
+    }
   }
 
-  for (const attribute of node.getAttributeNames()) {
-    if (attribute.slice(0, 2) !== "on") {
-      continue;
-    }
-
-    const handlerName = node.getAttribute(attribute);
-    node.removeAttribute(attribute);
-
-    if (handlerName === null) {
-      continue;
-    }
-
-    node.addEventListener(
-      attribute.slice(2, attribute.length),
-      handlers[handlerName]
-    );
-
-    for (const childNode of node.children) {
-      addListeners(childNode, handlers);
-    }
+  // recursively add event handlers to child nodes
+  for (const child of node.childNodes) {
+    addHandlers(child, handlers);
   }
 }
 
