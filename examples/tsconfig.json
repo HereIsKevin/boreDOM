@@ -2,7 +2,8 @@
   "compilerOptions": {
     "target": "esnext",
     "strict": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "jsx": "react"
   },
   "include": ["./"]
 }
