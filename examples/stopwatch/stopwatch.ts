@@ -2,8 +2,16 @@ import { component } from "../../dist/index.esm.js";
 
 const { Component, property, bound, element, html } = component;
 
+class TimedComponent extends Component {
+  update() {
+    console.time("render");
+    super.update();
+    console.timeEnd("render");
+  }
+}
+
 @element("stopwatch-app")
-class StopwatchApp extends Component {
+class StopwatchApp extends TimedComponent {
   run: boolean = false;
   interval?: number = undefined;
 
@@ -47,7 +55,7 @@ class StopwatchApp extends Component {
 }
 
 @element("stopwatch-view")
-class StopwatchView extends Component {
+class StopwatchView extends TimedComponent {
   @property seconds: number = 0;
 
   render() {
