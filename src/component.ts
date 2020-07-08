@@ -2,13 +2,6 @@ export { Component, bound, element, html, property, state };
 
 import * as dom from "./dom";
 
-declare global {
-  interface Window {
-    eventHandlers?: { [key: string]: EventHandler };
-    eventHandlersCount?: number;
-  }
-}
-
 interface Component {
   constructor: typeof Component;
 }
@@ -20,41 +13,6 @@ type Structure = Record<string, unknown> | unknown[];
 
 function isPrimitive(value: unknown): value is Primitive {
   return ["string", "number", "boolean"].includes(typeof value);
-}
-
-function bindHandler(handler: EventHandler): string {
-  // initialize handlers object if it does not exist
-  if (typeof window.eventHandlers === "undefined") {
-    window.eventHandlers = {};
-  }
-
-  // initialize count if it does not exist
-  if (typeof window.eventHandlersCount === "undefined") {
-    window.eventHandlersCount = 0;
-  }
-
-  // find name of first matched handler in handlers object
-  const handlerName: string | undefined = Object.keys(
-    window.eventHandlers
-  ).find((key: string): boolean =>
-    typeof window.eventHandlers === "undefined"
-      ? false
-      : window.eventHandlers[key] === handler
-  );
-
-  if (typeof handlerName === "undefined") {
-    window.eventHandlersCount++;
-
-    const count: number = window.eventHandlersCount;
-
-    // bind new handler it does not already exist
-    window.eventHandlers[`handler$${count}`] = handler;
-
-    return `window.eventHandlers.handler$${count}`;
-  } else {
-    // return existing handler otherwise
-    return `window.eventHandlers.${handlerName}`;
-  }
 }
 
 function kebabCase(value: string): string {
