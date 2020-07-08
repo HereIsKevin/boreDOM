@@ -173,10 +173,10 @@ function state(target: Component, key: string): void {
   // any problems should be caught by the type checker for the decorated
   // property, all state is is sort of a wrapper.
 
-  let stateValue: unknown;
-
   Object.defineProperty(target, key, {
     get(): unknown {
+      const stateValue = this.stateValues[key];
+
       if (Array.isArray(stateValue) || isRecord(stateValue)) {
         // add proxies recursively with updater for arrays and plain objects
         return recursiveProxy(stateValue, this.update.bind(this));
@@ -186,7 +186,7 @@ function state(target: Component, key: string): void {
       }
     },
     set(value: unknown): void {
-      stateValue = value;
+      this.stateValues[key] = value;
 
       // update after setting value
       this.update();
@@ -197,9 +197,6 @@ function state(target: Component, key: string): void {
 function property(target: Component, key: string): void {
   // prepare property type cache for automatic type conversion
   let propertyType: string = "string";
-
-  // prevent overwriting initial attribute value
-  let initial: boolean = true;
 
   // define observedAttributes for component subclass if it does not exist to
   // prevent adding attribute watching to parent component class
@@ -225,33 +222,42 @@ function property(target: Component, key: string): void {
         throw new TypeError("property decorator must be used on Component");
       }
 
-      // convert to kebab case before retrieving attribute
-      const attribute: string | null = this.getAttribute(kebabCase(key));
+      // convert key to HTML attribute form
+      const parsedKey = kebabCase(key);
+
+      const attribute: string | null = this.getAttribute(parsedKey);
 
       if (typeof attribute !== "string") {
         throw new Error(`attribute ${key} does not exist`);
       }
 
       // convert attribute with cached type
-      return convert(attribute, propertyType);
+      return convert(attribute, this.attributeTypes[parsedKey]);
     },
     set(value: Primitive): void {
       if (!isPrimitive(value)) {
         throw new TypeError("value must be string, number, or boolean");
       }
 
-      // cache current value type
-      propertyType = typeof value;
-
-      if (this instanceof Component) {
-        if (!this.hasAttribute(kebabCase(key)) || !initial) {
-          // stringify before setting attribute
-          this.setAttribute(kebabCase(key), String(value));
-        } else {
-          initial = false;
-        }
-      } else {
+      if (!(this instanceof Component)) {
         throw new TypeError("property decorator must be used on component");
+      }
+
+      // convert key to HTML attribute form
+      const parsedKey = kebabCase(key);
+
+      // cache current value type
+      this.attributeTypes[parsedKey] = typeof value;
+
+      if (
+        this.initialAttributes.includes(parsedKey) ||
+        !this.hasAttribute(parsedKey)
+      ) {
+        // stringify before setting attribute
+        this.setAttribute(parsedKey, String(value));
+      } else {
+        // do not update if attribute already exists for the first time
+        this.initialAttributes.push(parsedKey);
       }
     },
   });
@@ -291,8 +297,13 @@ function html(
 }
 
 class Component extends HTMLElement {
-  public root: ShadowRoot;
   public static observedAttributes: string[] = [];
+
+  public root: ShadowRoot;
+
+  public initialAttributes: string[] = [];
+  public attributeTypes: Record<string, string> = {};
+  public stateValues: Record<string, unknown> = {};
 
   public constructor() {
     super();
