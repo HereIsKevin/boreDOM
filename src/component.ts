@@ -277,6 +277,11 @@ function html(
   // take leading string first
   const output: string[] = [strings[0]];
 
+  // event handlers
+  const eventHandlers: Record<string, EventHandler> = {};
+
+  let handlerIndex: number = 0;
+
   // process value push, then push next string from strings
   for (const [index, item] of strings.slice(1, strings.length).entries()) {
     const value: EventHandler | Primitive = values[index];
@@ -286,14 +291,51 @@ function html(
       output.push(String(value));
     } else {
       // bind and process event handlers
-      output.push(`"${bindHandler(value)}(event);"`);
+      output.push(`handler$${handlerIndex}`);
+      eventHandlers[`handler$${handlerIndex}`] = value;
+      handlerIndex++;
     }
 
     output.push(item);
   }
 
   // concat processed strings and generate document fragment
-  return dom.html(output.join(""));
+  const result: DocumentFragment = dom.html(output.join(""));
+  addListeners(result, eventHandlers);
+  return result;
+}
+
+function isElement(node: Node): node is Element {
+  return node.nodeType === Node.ELEMENT_NODE;
+}
+
+function addListeners(node: Node, handlers: Record<string, EventHandler>): void {
+  if (!isElement(node)) {
+    for (const thing of node.childNodes) {
+      addListeners(thing, handlers);
+    }
+
+    return;
+  }
+
+  for (const attribute of node.getAttributeNames()) {
+    if (attribute.slice(0, 2) !== "on") {
+      continue;
+    }
+
+    const handlerName = node.getAttribute(attribute);
+    node.removeAttribute(attribute);
+
+    if (handlerName === null) {
+      continue;
+    }
+
+    node.addEventListener(attribute.slice(2, attribute.length), handlers[handlerName]);
+
+    for (const childNode of node.children) {
+      addListeners(childNode, handlers);
+    }
+  }
 }
 
 class Component extends HTMLElement {
