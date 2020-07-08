@@ -3,7 +3,9 @@ declare namespace React {
     state: Record<string, any>;
     props: Record<string, any>;
 
-    setState(updater: (state: Record<string, any>) => Record<string, any>): void;
+    setState(
+      updater: (state: Record<string, any>) => Record<string, any>
+    ): void;
     render(): JSX.IntrinsicElements;
   }
 }
@@ -37,8 +39,8 @@ class StopwatchApp extends React.Component {
 
     if (this.run) {
       this.interval = window.setInterval(() => {
-        this.setState(state => ({
-          seconds: state.seconds + 0.01
+        this.setState((state) => ({
+          seconds: state.seconds + 0.01,
         }));
       }, 10);
     } else {
@@ -48,8 +50,8 @@ class StopwatchApp extends React.Component {
   }
 
   onReset() {
-    this.setState(state => ({
-      seconds: 0
+    this.setState((state) => ({
+      seconds: 0,
     }));
   }
 
