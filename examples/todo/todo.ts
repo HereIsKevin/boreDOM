@@ -1,4 +1,4 @@
-import { dom } from "../../dist/index.esm.js";
+import { dom } from "../../dist/esm/index.js";
 
 const { html, render } = dom;
 

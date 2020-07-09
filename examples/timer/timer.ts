@@ -1,4 +1,4 @@
-import { component } from "../../dist/index.esm.js";
+import { component } from "../../dist/esm/index.js";
 
 const { Component, property, bound, element, html } = component;
 
