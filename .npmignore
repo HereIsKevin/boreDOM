@@ -3,10 +3,11 @@ docs/
 examples/
 src/
 test/
-.eslintrc.js
+.eslintrc.cjs
 .gitignore
 .prettierrc.json
 boreDOM.md
+package-cjs.json
 rollup.config.cjs.js
 rollup.config.esm.js
 terser.json
