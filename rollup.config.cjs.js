@@ -1,7 +1,7 @@
 export default {
   input: "./build/index.js",
   output: {
-    file: "./dist/index.cjs.js",
+    file: "./dist/cjs/index.js",
     format: "commonjs",
   },
 };
