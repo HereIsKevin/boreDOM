@@ -1,7 +1,7 @@
 export default {
   input: "./build/index.js",
   output: {
-    file: "./dist/index.esm.js",
+    file: "./dist/esm/index.js",
     format: "esm",
   },
 };
