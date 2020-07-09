@@ -31,7 +31,7 @@
     "build:minify:esm": "terser --config-file ./terser.json --output ./dist/esm/index.min.js -- ./dist/esm/index.js",
     "build:minify:cjs": "terser --config-file ./terser.json --output ./dist/cjs/index.min.js -- ./dist/cjs/index.js",
     "build:minify": "npm-run-all --parallel build:minify:esm build:minify:cjs",
-    "build:finish": "shx echo '{\n  \"type\": \"commonjs\"\n}' > ./dist/cjs/package.json",
+    "build:finish": "shx cp ./package-cjs.json ./dist/cjs/package.json",
     "build:release": "npm-run-all --sequential build:tsc build:bundle build:dts build:minify build:finish",
     "build:docs": "typedoc --name boreDOM ./src/index.ts --out ./docs/",
     "build:examples": "tsc --project ./examples/tsconfig.json",
