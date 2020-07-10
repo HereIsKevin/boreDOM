@@ -1,4 +1,7 @@
-import { html, render } from "../build/dom.js";
+import { dom } from "../dist/esm/index.js";
+
+const { html, render } = dom;
+const assert = chai.assert;
 
 describe("dom", function () {
   describe("html", function () {
@@ -14,7 +17,7 @@ describe("dom", function () {
     });
 
     it("does not fail on non-string value", function () {
-      assert.doesNotThrow(() => html(undefined), Error);
+      assert.doesNotThrow(() => html((undefined as unknown) as string), Error);
     });
 
     it("creates a document fragment", function () {
