@@ -1,9 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es2016",
+    "target": "es2017",
     "strict": true,
     "experimentalDecorators": true,
-    "jsx": "react"
+    "jsx": "react",
+    "rootDirs": ["../dist/", "../dist/esm/"]
   },
   "include": ["./"]
 }
