@@ -36,8 +36,8 @@
     "build:docs": "typedoc --name boreDOM ./src/index.ts --out ./docs/",
     "build:examples": "tsc --project ./examples/tsconfig.json",
     "build:test": "tsc --project ./test/tsconfig.json",
-    "format:check": "prettier --check ./src/ ./examples/ ./*.js ./*.json ./*.md",
-    "format:write": "prettier --write ./src/ ./examples/ ./*.js ./*.json ./*.md",
+    "format:check": "prettier --check ./src/ ./examples/ ./test/ ./*.js ./*.cjs ./*.json ./*.md",
+    "format:write": "prettier --write ./src/ ./examples/ ./test/ ./*.js ./*.cjs ./*.json ./*.md",
     "lint:check": "eslint --ext .ts ./src/",
     "lint:fix": "eslint --fix --ext .ts ./src/",
     "serve": "serve"
