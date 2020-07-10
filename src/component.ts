@@ -25,7 +25,7 @@ function kebabCase(value: string): string {
   }
 
   // replace all uppercase letters with - plus it, then convert to lowercase
-  return value.replace(/A-Z/g, "-$&").toLowerCase();
+  return value.replace(/[A-Z]/g, "-$&").toLowerCase();
 }
 
 function convert(value: string, finalType: string): Primitive {
