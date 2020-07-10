@@ -9,14 +9,11 @@
   <body>
     <div id="mocha"></div>
 
-    <!-- load and setup chai -->
-    <script src="../node_modules/chai/chai.js"></script>
-    <script type="module">
-      window.assert = chai.assert;
-    </script>
+    <!-- load chai -->
+    <script type="module" src="../node_modules/chai/chai.js"></script>
 
     <!-- load and setup mocha -->
-    <script src="../node_modules/mocha/mocha.js"></script>
+    <script type="module" src="../node_modules/mocha/mocha.js"></script>
     <script type="module">
       mocha.setup("bdd");
     </script>
