@@ -241,7 +241,7 @@ function update(
       }
 
       currentElement.setAttribute(currentAttribute, template[index].value);
-    } else if (item.kind === "text") {
+    } else if (template[index].kind === "text") {
       let currentElement;
       let currentNode;
       let currentIndex;
@@ -264,6 +264,44 @@ function update(
       }
 
       currentNode.nextSibling.textContent = template[index].value;
+    } else if (template[index].kind === "node") {
+      let currentElement;
+      let currentStart;
+      let currentEnd;
+      let currentIndex;
+
+      for (const element of cache.nodes) {
+        for (const node of element.texts) {
+          if (Number(node[2]) === dynamicIndex) {
+            currentElement = element.element;
+            currentStart = node[0];
+            currentEnd = node[1];
+            currentIndex = Number(node[2]);
+          }
+        }
+      }
+
+      const raw = generateFragment(template[index].value);
+
+      if (typeof currentStart === "undefined") {
+        throw new Error("element or attribute is somehow missing");
+      }
+
+      while (currentStart.nextSibling !== currentEnd) {
+        const next = currentStart.nextSibling;
+
+        if (next === null) {
+          throw new Error("element or attribute is somehow missing");
+        }
+
+        next.remove();
+      }
+
+      if (typeof currentElement === "undefined") {
+        throw new Error("element or attribute is somehow missing");
+      }
+
+      currentElement.insertBefore(raw, currentEnd);
     }
 
     dynamicIndex++;
@@ -281,7 +319,8 @@ console.time("render");
 let value = 0;
 let template = html`<p>Hello, world</p>
   <p id="value">Value is ${String(value)}</p>
-  <button id="increment">Increment</button>`;
+  <button id="increment">Increment</button>
+  ${[...Array(value).keys()].map((x) => `<p>${x}<p>`).join("")}`;
 
 const cache = render(element, template);
 
@@ -296,7 +335,8 @@ item.addEventListener("click", () => {
   value++;
   const newTemplate = html`<p>Hello, world</p>
     <p id="value">Value is ${String(value)}</p>
-    <button id="increment">Increment</button>`;
+    <button id="increment">Increment</button>
+    ${[...Array(value).keys()].map((x) => `<p>${x}</p>`).join("")}`;
   update(element, template, newTemplate, cache);
   template = newTemplate;
   console.timeEnd("render");
