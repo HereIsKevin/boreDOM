@@ -233,6 +233,13 @@ function update(
         }
       }
 
+      if (
+        typeof currentElement === "undefined" ||
+        typeof currentAttribute === "undefined"
+      ) {
+        throw new Error("element or attribute is somehow missing");
+      }
+
       currentElement.setAttribute(currentAttribute, template[index].value);
     } else if (item.kind === "text") {
       let currentElement;
@@ -249,18 +256,14 @@ function update(
         }
       }
 
+      if (
+        typeof currentNode === "undefined" ||
+        currentNode.nextSibling === null
+      ) {
+        throw new Error("element or attribute is somehow missing");
+      }
+
       currentNode.nextSibling.textContent = template[index].value;
-
-      // console.log(cache.nodes);console.log(cache.nodes.filter(
-      //   (x) => { console.log(x); return x.texts[0][2] === String(index * 2  -1); }
-      // ))
-      // const node = cache.nodes.filter(
-      //   (x) => x.texts[0][2] === String(index * 2 - 1)
-      // )[0].texts[0][0].nextSibling;
-
-      // if (node !== null) {
-      //   node.textContent = template[index].value;
-      // }
     }
 
     dynamicIndex++;
