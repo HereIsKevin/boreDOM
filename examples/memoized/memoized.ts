@@ -8,7 +8,9 @@ function template(value: number) {
 }
 
 function update(node: Element, value: number) {
+  console.time("render");
   render(node, template(value));
+  console.timeEnd("render");
 }
 
 let value = 0;
