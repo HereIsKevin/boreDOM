@@ -4,7 +4,8 @@ const { html, render } = memoized;
 
 function template(value: number) {
   return html`<div id="display">Value is currently: ${String(value)}</div>
-    <button id="increment">Click to increment</button>`;
+    <button id="increment">Click to increment</button>
+    ${[...Array(value).keys()].map((x) => `<div>${x}</div>`).join("")}`;
 }
 
 function update(node: Element, value: number) {
