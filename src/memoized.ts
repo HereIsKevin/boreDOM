@@ -162,7 +162,7 @@ function cacheTexts(node: Node): CachedText[] {
 }
 
 function interpolateValues(
-  node: Element,
+  node: Node,
   values: string[]
 ): [CachedText[], CachedElement[]] {
   const cacheText: CachedText[] = [];
@@ -208,8 +208,10 @@ function cacheAll(
   const textCache: CachedText[] = [];
   const elementCache: CachedElement[] = [];
 
-  if (isElementNode(node)) {
-    attributesCache.push(...cacheAttributes(node, template.values));
+  if (node.hasChildNodes()) {
+    if (isElementNode(node)) {
+      attributesCache.push(...cacheAttributes(node, template.values));
+    }
 
     const interpolate = interpolateValues(node, template.values);
 
