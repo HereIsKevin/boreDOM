@@ -1,345 +1,309 @@
-interface TemplateItem {
-  kind: "attribute" | "text" | "node" | "static";
-  name?: string;
-  value: string;
+export { html, render };
+
+interface RawTemplate {
+  strings: TemplateStringsArray;
+  values: string[];
 }
 
-interface CacheInfo {
+interface ParsedTemplate extends RawTemplate {
+  parsed: string;
+}
+
+interface CachedAttribute {
+  index: number;
+  name: string;
   element: Element;
-  attributes: CacheAttributes[];
-  nodes: CacheNodes[];
 }
 
-interface CacheAttributes {
-  element: Element;
-  attributes: [string, string][];
+interface CachedText {
+  index: number;
+  node: Text;
 }
 
-interface CacheNodes {
-  element: Element;
-  texts: [Comment, Comment, string][];
+interface CachedElement {
+  index: number;
+  start: Comment;
+  end: Comment;
 }
 
-function generateFragment(template: string): DocumentFragment {
-  return document.createRange().createContextualFragment(template);
+interface Template {
+  strings: TemplateStringsArray;
+  values: string[];
+  fragment: DocumentFragment;
+  texts: CachedText[];
+  elements: CachedElement[];
+  attributes: CachedAttribute[];
 }
 
-function html(
-  strings: TemplateStringsArray,
-  ...values: string[]
-): TemplateItem[] {
-  const output: TemplateItem[] = [];
-
-  for (const [index, dynamicItem] of values.entries()) {
-    const staticItem = strings[index];
-
-    let attribute = false;
-
-    if (/ ([a-z]|-)+=\"$/.test(staticItem)) {
-      const attributeName = staticItem.match(/ ([a-z]|-)+=\"$/);
-
-      if (attributeName === null) {
-        throw new Error("attribute somehow missing");
-      }
-
-      const finalName = attributeName.pop();
-
-      if (finalName === undefined) {
-        throw new Error("attribute somehow missing");
-      }
-
-      attribute = true;
-
-      const staticPart = staticItem.slice(
-        0,
-        staticItem.length - (finalName.length + 2)
-      );
-      const dataPart = `data-attribute-${finalName}="${index}" `;
-      const attributePart = `${finalName}="`;
-
-      output.push({
-        kind: "static",
-        value: `${staticPart}${dataPart}${attributePart}`,
-      });
-    } else {
-      output.push({ kind: "static", value: staticItem });
-    }
-
-    if (attribute) {
-      const attributeName = staticItem.match(/ ([a-z]|-)+=\"$/);
-
-      if (attributeName === null) {
-        throw new Error("attribute somehow missing");
-      }
-
-      const finalName = attributeName.pop();
-
-      if (finalName === undefined) {
-        throw new Error("attribute somehow missing");
-      }
-
-      output.push({
-        kind: "attribute",
-        name: finalName,
-        value: dynamicItem,
-      });
-    } else {
-      output.push({
-        kind: "static",
-        value: `<!--data-start-${index}-->`,
-      });
-
-      output.push({
-        kind: /<.+?>/.test(dynamicItem) ? "node" : "text",
-        value: dynamicItem,
-      });
-
-      output.push({
-        kind: "static",
-        value: `<!--data-end-${index}-->`,
-      });
-    }
-  }
-
-  output.push({ kind: "static", value: strings[strings.length - 1] });
-
-  return output;
-}
-
-function findAttributes(target: Element): CacheAttributes {
-  return {
-    element: target,
-    attributes: target
-      .getAttributeNames()
-      .filter((x) => x.slice(0, 15) === "data-attribute-")
-      .map((y) => [y.slice(15), target.getAttribute(y) || ""]),
-  };
-}
-
-function findAllAttributes(
-  target: Element,
-  _attributes: CacheAttributes[] = []
-): CacheAttributes[] {
-  _attributes.push(findAttributes(target));
-
-  for (const child of target.childNodes) {
-    if (isElementNode(child)) {
-      findAllAttributes(child, _attributes);
-    }
-  }
-
-  return _attributes.filter((x) => x.attributes.length !== 0);
-}
-
-function isCommentNode(node: Node): node is Comment {
-  return node.nodeType === Node.COMMENT_NODE;
-}
-
-function findNodes(target: Element): CacheNodes {
-  const texts: { [key: string]: [Comment, Comment, string] } = {};
-
-  for (const child of target.childNodes) {
-    if (!isCommentNode(child)) {
-      continue;
-    }
-
-    const contents = (child.textContent || "").trim();
-
-    if (contents.slice(0, 11) === "data-start-") {
-      if (typeof texts[contents.slice(11)] === "undefined") {
-        texts[contents.slice(11)] = [new Comment(), new Comment(), ""];
-      }
-
-      texts[contents.slice(11)][0] = child;
-      texts[contents.slice(11)][2] = contents.slice(11);
-    } else if (contents.slice(0, 9) === "data-end-") {
-      if (typeof texts[contents.slice(9)] === "undefined") {
-        texts[contents.slice(9)] = [new Comment(), new Comment(), ""];
-      }
-
-      texts[contents.slice(9)][1] = child;
-    }
-  }
-
-  return {
-    element: target,
-    texts: Object.values(texts),
-  };
-}
-
-function findAllNodes(
-  target: Element,
-  _texts: CacheNodes[] = []
-): CacheNodes[] {
-  _texts.push(findNodes(target));
-
-  for (const child of target.childNodes) {
-    if (isElementNode(child)) {
-      findAllNodes(child, _texts);
-    }
-  }
-
-  return _texts.filter((x) => x.texts.length !== 0);
+interface MemoizedElement extends Element {
+  memoized?: Template;
 }
 
 function isElementNode(node: Node): node is Element {
   return node.nodeType === Node.ELEMENT_NODE;
 }
 
-function render(target: Element, template: TemplateItem[]): CacheInfo {
-  const fragment = generateFragment(template.map((x) => x.value).join(""));
+function isCommentNode(node: Node): node is Comment {
+  return node.nodeType === Node.COMMENT_NODE;
+}
 
-  while (fragment.firstChild) {
-    target.appendChild(fragment.firstChild);
+function isTextNode(node: Node): node is Text {
+  return node.nodeType === Node.TEXT_NODE;
+}
+
+function html(strings: TemplateStringsArray, ...values: string[]): RawTemplate {
+  return { strings, values };
+}
+
+function rawFragment(template: string): DocumentFragment {
+  return document.createRange().createContextualFragment(template);
+}
+
+function parseTemplate(template: RawTemplate): ParsedTemplate {
+  const result: string[] = [template.strings[0]];
+
+  for (const [index, value] of template.strings.slice(1).entries()) {
+    result.push(`{${index}}`);
+    result.push(value);
   }
 
+  return { ...template, parsed: result.join("") };
+}
+
+function cacheAttributes(node: Element, values: string[]): CachedAttribute[] {
+  const cache: CachedAttribute[] = [];
+
+  for (const name of node.getAttributeNames()) {
+    if (/^\{[0-9]+\}$/.test(node.getAttribute(name) || "")) {
+      const index = Number(name.slice(1, name.length - 1));
+
+      cache.push({
+        index: index,
+        name: name,
+        element: node,
+      });
+
+      node.setAttribute(name, values[index]);
+    }
+  }
+
+  return cache;
+}
+
+function cacheElements(node: Node): CachedElement[] {
+  const cache: CachedElement[] = [];
+
+  let currentStart: Comment | undefined;
+  let currentIndex: number = -1;
+
+  for (const child of node.childNodes) {
+    if (!isCommentNode(child)) {
+      continue;
+    }
+
+    if (
+      typeof currentStart === "undefined" &&
+      child.nodeValue !== null &&
+      /^\d+$/.test(child.nodeValue.trim())
+    ) {
+      currentStart = child;
+      currentIndex = Number(child.nodeValue.trim());
+    } else if (
+      typeof currentStart !== "undefined" &&
+      child.nodeValue !== null &&
+      child.nodeValue &&
+      Number(child.nodeValue.trim()) === currentIndex
+    ) {
+      cache.push({
+        index: currentIndex,
+        start: currentStart,
+        end: child,
+      });
+
+      currentIndex = -1;
+      currentStart = undefined;
+    }
+  }
+
+  return cache;
+}
+
+function cacheTexts(node: Node): CachedText[] {
+  const cache: CachedText[] = [];
+
+  for (const child of node.childNodes) {
+    if (!isCommentNode(child)) {
+      continue;
+    }
+
+    if (child.nodeValue !== null && /^\d+$/.test(child.nodeValue.trim())) {
+      const index = Number(child.nodeValue.trim());
+      const next = child.nextSibling;
+      const closure = next?.nextSibling;
+
+      if (next === null || closure === null || typeof closure === "undefined") {
+        continue;
+      }
+
+      if (
+        isTextNode(next) &&
+        isCommentNode(closure) &&
+        Number(closure.nodeValue?.trim()) === index
+      ) {
+        cache.push({
+          index,
+          node: next,
+        });
+      }
+    }
+  }
+
+  return cache;
+}
+
+function interpolateValues(
+  node: Element,
+  values: string[]
+): [CachedText[], CachedElement[]] {
+  const cacheText: CachedText[] = [];
+  const cacheElement: CachedElement[] = [];
+
+  let index = 0;
+
+  while (index < node.childNodes.length) {
+    const currentNode = node.childNodes[index];
+    const value = currentNode.nodeValue || "";
+
+    if (!/\{[0-9]+\}/.test(value)) {
+      index++;
+      continue;
+    }
+
+    const fragment = rawFragment(
+      value.replace(/\{[0-9]+\}/g, (x) => {
+        const valueIndex = Number(x.slice(1, x.length - 1));
+        return `<!--${valueIndex}-->${values[valueIndex]}<!--${valueIndex}-->`;
+      })
+    );
+
+    const length = fragment.childNodes.length;
+
+    cacheElement.push(...cacheElements(fragment));
+    cacheText.push(...cacheTexts(fragment));
+
+    node.insertBefore(fragment, currentNode);
+    node.removeChild(currentNode);
+
+    index += length;
+  }
+
+  return [cacheText, cacheElement];
+}
+
+function cacheAll(
+  node: Node,
+  template: ParsedTemplate
+): [CachedAttribute[], CachedText[], CachedElement[]] {
+  const attributesCache: CachedAttribute[] = [];
+  const textCache: CachedText[] = [];
+  const elementCache: CachedElement[] = [];
+
+  if (isElementNode(node)) {
+    attributesCache.push(...cacheAttributes(node, template.values));
+
+    const interpolate = interpolateValues(node, template.values);
+
+    textCache.push(...interpolate[0]);
+    elementCache.push(...interpolate[1]);
+  }
+
+  for (const child of node.childNodes) {
+    if (isElementNode(child)) {
+      const [attributes, texts, elements] = cacheAll(child, template);
+
+      attributesCache.push(...attributes);
+      textCache.push(...texts);
+      elementCache.push(...elements);
+    }
+  }
+
+  return [attributesCache, textCache, elementCache];
+}
+
+function cachedTemplate(template: RawTemplate): Template {
+  const parsedTemplate = parseTemplate(template);
+  const fragment = rawFragment(parsedTemplate.parsed);
+  const cachedOutput = cacheAll(fragment, parsedTemplate);
+
   return {
-    element: target,
-    attributes: findAllAttributes(target),
-    nodes: findAllNodes(target),
+    strings: parsedTemplate.strings,
+    values: parsedTemplate.values,
+    fragment: fragment,
+    attributes: cachedOutput[0],
+    texts: cachedOutput[1],
+    elements: cachedOutput[2],
   };
 }
 
-function update(
-  target: Element,
-  oldTemplate: TemplateItem[],
-  template: TemplateItem[],
-  cache: CacheInfo
-): void {
-  let dynamicIndex = 0;
+function render(target: MemoizedElement, template: RawTemplate): void {
+  if (
+    !Object.prototype.hasOwnProperty.call(target, "memoized") ||
+    typeof target.memoized === "undefined"
+  ) {
+    const templateCache = cachedTemplate(template);
 
-  for (const [index, item] of oldTemplate.entries()) {
-    if (item.kind === "static") {
+    target.appendChild(templateCache.fragment);
+
+    Object.defineProperty(target, "memoized", {
+      value: templateCache,
+    });
+
+    return;
+  }
+
+  const attributeIndexes = target.memoized.attributes.map((x) => x.index);
+  const elementIndexes = target.memoized.elements.map((x) => x.index);
+  const textIndexes = target.memoized.texts.map((x) => x.index);
+
+  for (const [index, value] of target.memoized.values.entries()) {
+    if (value === template.values[index]) {
       continue;
     }
 
-    if (item.value === template[index].value) {
-      continue;
+    if (attributeIndexes.includes(index)) {
+      const { element, name } = target.memoized.attributes[
+        attributeIndexes.indexOf(index)
+      ];
+      const value = template.values[index];
+
+      element.setAttribute(name, value);
+    } else if (textIndexes.includes(index)) {
+      const { node } = target.memoized.texts[textIndexes.indexOf(index)];
+      const value = template.values[index];
+
+      node.nodeValue = value;
+    } else if (elementIndexes.includes(index)) {
+      const { start, end } = target.memoized.elements[
+        elementIndexes.indexOf(index)
+      ];
+      const value = rawFragment(template.values[index]);
+      const parent = start.parentNode;
+
+      if (parent === null) {
+        continue;
+      }
+
+      while (start.nextSibling !== end) {
+        const sibling = start.nextSibling;
+
+        if (sibling === null) {
+          break;
+        }
+
+        parent.removeChild(sibling);
+      }
+
+      parent.insertBefore(value, end);
     }
-
-    if (item.kind === "attribute") {
-      let currentElement;
-      let currentAttribute;
-      let currentIndex;
-
-      for (const element of cache.attributes) {
-        for (const attribute of element.attributes) {
-          if (Number(attribute[1]) === dynamicIndex) {
-            currentElement = element.element;
-            currentAttribute = attribute[0];
-            currentIndex = Number(attribute[1]);
-            break;
-          }
-        }
-      }
-
-      if (
-        typeof currentElement === "undefined" ||
-        typeof currentAttribute === "undefined"
-      ) {
-        throw new Error("element or attribute is somehow missing");
-      }
-
-      currentElement.setAttribute(currentAttribute, template[index].value);
-    } else if (template[index].kind === "text") {
-      let currentElement;
-      let currentNode;
-      let currentIndex;
-
-      for (const element of cache.nodes) {
-        for (const node of element.texts) {
-          if (Number(node[2]) === dynamicIndex) {
-            currentElement = element.element;
-            currentNode = node[0];
-            currentIndex = Number(node[2]);
-          }
-        }
-      }
-
-      if (
-        typeof currentNode === "undefined" ||
-        currentNode.nextSibling === null
-      ) {
-        throw new Error("element or attribute is somehow missing");
-      }
-
-      currentNode.nextSibling.textContent = template[index].value;
-    } else if (template[index].kind === "node") {
-      let currentElement;
-      let currentStart;
-      let currentEnd;
-      let currentIndex;
-
-      for (const element of cache.nodes) {
-        for (const node of element.texts) {
-          if (Number(node[2]) === dynamicIndex) {
-            currentElement = element.element;
-            currentStart = node[0];
-            currentEnd = node[1];
-            currentIndex = Number(node[2]);
-          }
-        }
-      }
-
-      const raw = generateFragment(template[index].value);
-
-      if (typeof currentStart === "undefined") {
-        throw new Error("element or attribute is somehow missing");
-      }
-
-      while (currentStart.nextSibling !== currentEnd) {
-        const next = currentStart.nextSibling;
-
-        if (next === null) {
-          throw new Error("element or attribute is somehow missing");
-        }
-
-        next.remove();
-      }
-
-      if (typeof currentElement === "undefined") {
-        throw new Error("element or attribute is somehow missing");
-      }
-
-      currentElement.insertBefore(raw, currentEnd);
-    }
-
-    dynamicIndex++;
   }
 }
-
-const element = document.getElementById("app");
-
-if (element === null) {
-  throw new Error("cannot find element");
-}
-
-console.time("render");
-
-let value = 0;
-let template = html`<p>Hello, world</p>
-  <p id="value">Value is ${String(value)}</p>
-  <button id="increment">Increment</button>
-  ${[...Array(value).keys()].map((x) => `<p>${x}<p>`).join("")}`;
-
-const cache = render(element, template);
-
-const item = document.getElementById("increment");
-
-if (item === null) {
-  throw new Error("cannot find element");
-}
-
-item.addEventListener("click", () => {
-  console.time("render");
-  value++;
-  const newTemplate = html`<p>Hello, world</p>
-    <p id="value">Value is ${String(value)}</p>
-    <button id="increment">Increment</button>
-    ${[...Array(value).keys()].map((x) => `<p>${x}</p>`).join("")}`;
-  update(element, template, newTemplate, cache);
-  template = newTemplate;
-  console.timeEnd("render");
-});
-
-console.timeEnd("render");
