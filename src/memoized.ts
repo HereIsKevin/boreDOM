@@ -2,7 +2,7 @@ export { html, render };
 
 interface RawTemplate {
   strings: TemplateStringsArray;
-  values: string[];
+  values: (string | string[])[];
 }
 
 interface ParsedTemplate extends RawTemplate {
@@ -28,7 +28,7 @@ interface CachedElement {
 
 interface Template {
   strings: TemplateStringsArray;
-  values: string[];
+  values: (string | string[])[];
   fragment: DocumentFragment;
   texts: CachedText[];
   elements: CachedElement[];
@@ -51,7 +51,10 @@ function isTextNode(node: Node): node is Text {
   return node.nodeType === Node.TEXT_NODE;
 }
 
-function html(strings: TemplateStringsArray, ...values: string[]): RawTemplate {
+function html(
+  strings: TemplateStringsArray,
+  ...values: (string | string[])[]
+): RawTemplate {
   return { strings, values };
 }
 
@@ -163,7 +166,7 @@ function cacheTexts(node: Node): CachedText[] {
 
 function interpolateValues(
   node: Node,
-  values: string[]
+  values: (string | string[])[]
 ): [CachedText[], CachedElement[]] {
   const cacheText: CachedText[] = [];
   const cacheElement: CachedElement[] = [];
@@ -182,7 +185,12 @@ function interpolateValues(
     const fragment = rawFragment(
       value.replace(/\{[0-9]+\}/g, (x) => {
         const valueIndex = Number(x.slice(1, x.length - 1));
-        return `<!--${valueIndex}-->${values[valueIndex]}<!--${valueIndex}-->`;
+        const currentValue = values[valueIndex];
+        return `<!--${valueIndex}-->${
+          typeof currentValue === "string"
+            ? currentValue
+            : markElements(currentValue).join("")
+        }<!--${valueIndex}-->`;
       })
     );
 
@@ -210,7 +218,12 @@ function cacheAll(
 
   if (node.hasChildNodes()) {
     if (isElementNode(node)) {
-      attributesCache.push(...cacheAttributes(node, template.values));
+      attributesCache.push(
+        ...cacheAttributes(
+          node,
+          template.values.map((x) => String(x))
+        )
+      );
     }
 
     const interpolate = interpolateValues(node, template.values);
@@ -247,6 +260,116 @@ function cachedTemplate(template: RawTemplate): Template {
   };
 }
 
+function markElements(elements: string[]): string[] {
+  const result: string[] = [];
+
+  for (const [index, element] of elements.entries()) {
+    result.push(`<!--separator-->`);
+    result.push(element);
+  }
+
+  return result;
+}
+
+function findKeep(
+  oldValues: string[],
+  newValues: string[]
+): [number, number][] {
+  const filtered: [number, number][] = [];
+
+  for (const [newIndex, newValue] of newValues.entries()) {
+    for (const [oldIndex, oldValue] of oldValues.entries()) {
+      if (newValue === oldValue) {
+        filtered.push([newIndex, oldIndex]);
+      }
+    }
+  }
+
+  const keep: [number, number][] = [];
+  let last = [-1, -1];
+
+  for (const group of filtered) {
+    if (group[0] > last[0] && group[1] > last[1]) {
+      keep.push(group);
+      last = group;
+    }
+  }
+
+  return keep;
+}
+
+function renderElements(
+  node: Node,
+  start: Comment,
+  end: Comment,
+  oldValue: string[],
+  newValue: string[]
+): void {
+  const firstOldNode = start.nextSibling;
+
+  if (firstOldNode === null) {
+    return;
+  }
+
+  const oldNodes: Node[] = [firstOldNode];
+
+  while (oldNodes[oldNodes.length - 1].nextSibling !== end) {
+    const currentOldNode = oldNodes[oldNodes.length - 1].nextSibling;
+
+    if (currentOldNode === null) {
+      return;
+    }
+
+    oldNodes.push(currentOldNode);
+  }
+
+  const keep = findKeep(oldValue, newValue);
+
+  const keepNew = keep.map((x) => x[0]);
+  const keepOld = keep.map((x) => x[1]);
+
+  const remove = [...oldValue.keys()].filter((x) => !keepOld.includes(x));
+  const insert = [...newValue.keys()].filter((x) => !keepNew.includes(x));
+
+  let currentIndex = -1;
+  let oldNodeCollection: Node[][] = [];
+
+  for (const child of oldNodes) {
+    if (
+      isCommentNode(child) &&
+      child.nodeValue !== null &&
+      child.nodeValue.trim() === "separator"
+    ) {
+      currentIndex++;
+      oldNodeCollection[currentIndex] = [child];
+    } else {
+      oldNodeCollection[currentIndex].push(child);
+    }
+  }
+
+  oldNodeCollection.push([end]);
+
+  // console.log(oldNodeCollection)
+
+  for (const [modifier, index] of remove.entries()) {
+    for (const child of oldNodeCollection[modifier - index]) {
+      node.removeChild(child);
+    }
+
+    oldNodeCollection.splice(modifier - index, 1);
+  }
+
+  // console.log(oldNodeCollection)
+
+  for (const index of insert) {
+    // console.log(oldNodeCollection, index)
+    node.insertBefore(
+      rawFragment(`<!--separator-->${newValue[index]}`),
+      oldNodeCollection[index][0]
+    );
+  }
+}
+
 function render(target: MemoizedElement, template: RawTemplate): void {
   if (
     !Object.prototype.hasOwnProperty.call(target, "memoized") ||
@@ -276,36 +399,47 @@ function render(target: MemoizedElement, template: RawTemplate): void {
       const { element, name } = target.memoized.attributes[
         attributeIndexes.indexOf(index)
       ];
-      const value = template.values[index];
+      const newValue = template.values[index];
 
-      element.setAttribute(name, value);
+      element.setAttribute(name, String(newValue));
     } else if (textIndexes.includes(index)) {
       const { node } = target.memoized.texts[textIndexes.indexOf(index)];
-      const value = template.values[index];
+      const newValue = template.values[index];
 
-      node.nodeValue = value;
+      node.nodeValue = String(newValue);
     } else if (elementIndexes.includes(index)) {
       const { start, end } = target.memoized.elements[
         elementIndexes.indexOf(index)
       ];
-      const value = rawFragment(template.values[index]);
+      const newValue = template.values[index];
       const parent = start.parentNode;
 
       if (parent === null) {
         continue;
       }
 
-      while (start.nextSibling !== end) {
-        const sibling = start.nextSibling;
+      if (typeof newValue === "string" || typeof value === "string") {
+        while (start.nextSibling !== end) {
+          const sibling = start.nextSibling;
 
-        if (sibling === null) {
-          break;
+          if (sibling === null) {
+            break;
+          }
+
+          parent.removeChild(sibling);
         }
 
-        parent.removeChild(sibling);
+        parent.insertBefore(
+          rawFragment(
+            typeof newValue === "string" ? newValue : newValue.join("")
+          ),
+          end
+        );
+      } else {
+        renderElements(parent, start, end, value, newValue);
       }
-
-      parent.insertBefore(value, end);
     }
   }
+
+  target.memoized.values = template.values;
 }
