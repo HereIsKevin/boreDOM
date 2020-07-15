@@ -305,22 +305,16 @@ function renderElements(
   oldValue: string[],
   newValue: string[]
 ): void {
-  const firstOldNode = start.nextSibling;
-
-  if (firstOldNode === null) {
-    return;
-  }
-
-  const oldNodes: Node[] = [firstOldNode];
+  const oldNodes: Node[] = [start];
 
   while (oldNodes[oldNodes.length - 1].nextSibling !== end) {
-    const currentOldNode = oldNodes[oldNodes.length - 1].nextSibling;
+    const currentNode = oldNodes[oldNodes.length - 1].nextSibling;
 
-    if (currentOldNode === null) {
-      return;
+    if (currentNode === null) {
+      break;
     }
 
-    oldNodes.push(currentOldNode);
+    oldNodes.push(currentNode);
   }
 
   const keep = findKeep(oldValue, newValue);
@@ -334,7 +328,7 @@ function renderElements(
   let currentIndex = -1;
   let oldNodeCollection: Node[][] = [];
 
-  for (const child of oldNodes) {
+  for (const child of oldNodes.slice(1, oldNodes.length - 1)) {
     if (
       isCommentNode(child) &&
       child.nodeValue !== null &&
@@ -348,8 +342,6 @@ function renderElements(
   }
 
   oldNodeCollection.push([end]);
-
-  // console.log(oldNodeCollection)
 
   for (const [modifier, index] of remove.entries()) {
     for (const child of oldNodeCollection[modifier - index]) {
