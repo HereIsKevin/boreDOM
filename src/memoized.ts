@@ -5,50 +5,41 @@ interface RawTemplate {
   values: (string | string[])[];
 }
 
-interface ParsedTemplate extends RawTemplate {
-  parsed: string;
-}
-
-interface CachedAttribute {
-  index: number;
-  name: string;
+interface AttributeTemplate {
   element: Element;
+  name: string;
+  index: number;
 }
 
-interface CachedText {
+interface TextTemplate {
+  text: Text;
   index: number;
-  node: Text;
 }
 
-interface CachedElement {
-  index: number;
+interface ElementTemplate {
   start: Comment;
   end: Comment;
+  index: number;
 }
 
 interface Template {
   strings: TemplateStringsArray;
   values: (string | string[])[];
   fragment: DocumentFragment;
-  texts: CachedText[];
-  elements: CachedElement[];
-  attributes: CachedAttribute[];
+  texts: TextTemplate[];
+  elements: ElementTemplate[];
+  attributes: AttributeTemplate[];
+}
+
+interface Indexes {
+  attributes: number[];
+  elements: number[];
+  texts: number[];
 }
 
 interface MemoizedElement extends Element {
   memoized?: Template;
-}
-
-function isElementNode(node: Node): node is Element {
-  return node.nodeType === Node.ELEMENT_NODE;
-}
-
-function isCommentNode(node: Node): node is Comment {
-  return node.nodeType === Node.COMMENT_NODE;
-}
-
-function isTextNode(node: Node): node is Text {
-  return node.nodeType === Node.TEXT_NODE;
+  indexes?: Indexes;
 }
 
 function html(
@@ -58,332 +49,216 @@ function html(
   return { strings, values };
 }
 
-function rawFragment(template: string): DocumentFragment {
-  return document.createRange().createContextualFragment(template);
-}
-
-function parseTemplate(template: RawTemplate): ParsedTemplate {
-  const result: string[] = [template.strings[0]];
+function markValues(template: RawTemplate): string {
+  const result = [template.strings[0]];
 
   for (const [index, value] of template.strings.slice(1).entries()) {
     result.push(`{${index}}`);
     result.push(value);
   }
 
-  return { ...template, parsed: result.join("") };
+  return result.join("");
 }
 
-function cacheAttributes(node: Element, values: string[]): CachedAttribute[] {
-  const cache: CachedAttribute[] = [];
-
-  for (const name of node.getAttributeNames()) {
-    if (/^\{[0-9]+\}$/.test(node.getAttribute(name) || "")) {
-      const index = Number(name.slice(1, name.length - 1));
-
-      cache.push({
-        index: index,
-        name: name,
-        element: node,
-      });
-
-      node.setAttribute(name, values[index]);
-    }
-  }
-
-  return cache;
+function rawFragment(template: string): DocumentFragment {
+  return document.createRange().createContextualFragment(template);
 }
 
-function cacheElements(node: Node): CachedElement[] {
-  const cache: CachedElement[] = [];
-
-  let currentStart: Comment | undefined;
-  let currentIndex: number = -1;
-
-  for (const child of node.childNodes) {
-    if (!isCommentNode(child)) {
-      continue;
-    }
-
-    if (
-      typeof currentStart === "undefined" &&
-      child.nodeValue !== null &&
-      /^\d+$/.test(child.nodeValue.trim())
-    ) {
-      currentStart = child;
-      currentIndex = Number(child.nodeValue.trim());
-    } else if (
-      typeof currentStart !== "undefined" &&
-      child.nodeValue !== null &&
-      child.nodeValue &&
-      Number(child.nodeValue.trim()) === currentIndex
-    ) {
-      cache.push({
-        index: currentIndex,
-        start: currentStart,
-        end: child,
-      });
-
-      currentIndex = -1;
-      currentStart = undefined;
-    }
-  }
-
-  return cache;
-}
-
-function cacheTexts(node: Node): CachedText[] {
-  const cache: CachedText[] = [];
-
-  for (const child of node.childNodes) {
-    if (!isCommentNode(child)) {
-      continue;
-    }
-
-    if (child.nodeValue !== null && /^\d+$/.test(child.nodeValue.trim())) {
-      const index = Number(child.nodeValue.trim());
-      const next = child.nextSibling;
-      const closure = next?.nextSibling;
-
-      if (next === null || closure === null || typeof closure === "undefined") {
-        continue;
-      }
-
-      if (
-        isTextNode(next) &&
-        isCommentNode(closure) &&
-        Number(closure.nodeValue?.trim()) === index
-      ) {
-        cache.push({
-          index,
-          node: next,
-        });
-      }
-    }
-  }
-
-  return cache;
-}
-
-function interpolateValues(
-  node: Node,
+function interpolateAttributes(
+  element: Element,
   values: (string | string[])[]
-): [CachedText[], CachedElement[]] {
-  const cacheText: CachedText[] = [];
-  const cacheElement: CachedElement[] = [];
+): AttributeTemplate[] {
+  const attributes: AttributeTemplate[] = [];
 
+  for (const name of element.getAttributeNames()) {
+    const value = element.getAttribute(name) ?? "";
+
+    if (/\{[0-9]+\}/.test(value)) {
+      const index = Number(value.slice(1, value.length - 1));
+
+      element.setAttribute(name, String(values[index]));
+      attributes.push({ element, name, index });
+    }
+  }
+
+  return attributes;
+}
+
+function markElements(values: string[]): string {
+  const output: string[] = [];
+
+  for (const value of values) {
+    output.push("<!--separator-->");
+    output.push(value);
+  }
+
+  return output.join("");
+}
+
+function interpolateValues(element: Node, values: (string | string[])[]): void {
   let index = 0;
 
-  while (index < node.childNodes.length) {
-    const currentNode = node.childNodes[index];
-    const value = currentNode.nodeValue || "";
+  while (index < element.childNodes.length) {
+    const current = element.childNodes[index];
+    const value = current.nodeValue ?? "";
 
-    if (!/\{[0-9]+\}/.test(value)) {
+    if (!(current instanceof Text) && !/\{[0-9]+\}/.test(value)) {
       index++;
       continue;
     }
 
-    const fragment = rawFragment(
-      value.replace(/\{[0-9]+\}/g, (x) => {
-        const valueIndex = Number(x.slice(1, x.length - 1));
-        const currentValue = values[valueIndex];
-        return `<!--${valueIndex}-->${
-          typeof currentValue === "string"
-            ? currentValue
-            : markElements(currentValue).join("")
-        }<!--${valueIndex}-->`;
-      })
-    );
+    const interpolated = value.replace(/\{[0-9]+\}/g, (match) => {
+      const currentIndex = Number(match.slice(1, match.length - 1));
+      const currentValue = values[currentIndex];
 
+      return `<!--${currentIndex}-->${
+        Array.isArray(currentValue) ? markElements(currentValue) : currentValue
+      }<!--${currentIndex}-->`;
+    });
+
+    const fragment = rawFragment(interpolated);
     const length = fragment.childNodes.length;
 
-    cacheElement.push(...cacheElements(fragment));
-    cacheText.push(...cacheTexts(fragment));
-
-    node.insertBefore(fragment, currentNode);
-    node.removeChild(currentNode);
+    element.insertBefore(fragment, current);
+    element.removeChild(current);
 
     index += length;
   }
-
-  return [cacheText, cacheElement];
 }
 
-function cacheAll(
-  node: Node,
-  template: ParsedTemplate
-): [CachedAttribute[], CachedText[], CachedElement[]] {
-  const attributesCache: CachedAttribute[] = [];
-  const textCache: CachedText[] = [];
-  const elementCache: CachedElement[] = [];
+function interpolateNodes(
+  element: Node,
+  values: (string | string[])[]
+): [TextTemplate[], ElementTemplate[]] {
+  const texts: TextTemplate[] = [];
+  const elements: ElementTemplate[] = [];
 
-  if (node.hasChildNodes()) {
-    if (isElementNode(node)) {
-      attributesCache.push(
-        ...cacheAttributes(
-          node,
-          template.values.map((x) => String(x))
-        )
-      );
+  interpolateValues(element, values);
+
+  let start: Comment | undefined;
+  let end: Comment | undefined;
+  let index: number | undefined;
+
+  for (const node of element.childNodes) {
+    if (!(node instanceof Comment)) {
+      continue;
     }
 
-    const interpolate = interpolateValues(node, template.values);
+    const value = (node.nodeValue ?? "").trim();
 
-    textCache.push(...interpolate[0]);
-    elementCache.push(...interpolate[1]);
-  }
-
-  for (const child of node.childNodes) {
-    if (isElementNode(child)) {
-      const [attributes, texts, elements] = cacheAll(child, template);
-
-      attributesCache.push(...attributes);
-      textCache.push(...texts);
-      elementCache.push(...elements);
+    if (typeof start === "undefined" && /^\d+$/.test(value)) {
+      start = node;
+      index = Number(value);
+    } else if (typeof end === "undefined" && Number(value) === index) {
+      end = node;
     }
+
+    if (
+      typeof start === "undefined" ||
+      typeof end === "undefined" ||
+      typeof index === "undefined"
+    ) {
+      continue;
+    }
+
+    if (
+      start?.nextSibling instanceof Text &&
+      start?.nextSibling?.nextSibling === end
+    ) {
+      texts.push({ index, text: start.nextSibling });
+    } else {
+      elements.push({ index, start, end });
+    }
+
+    start = undefined;
+    end = undefined;
+    index = undefined;
   }
 
-  return [attributesCache, textCache, elementCache];
+  return [texts, elements];
 }
 
-function cachedTemplate(template: RawTemplate): Template {
-  const parsedTemplate = parseTemplate(template);
-  const fragment = rawFragment(parsedTemplate.parsed);
-  const cachedOutput = cacheAll(fragment, parsedTemplate);
+function interpolate(
+  element: Node,
+  values: (string | string[])[]
+): [AttributeTemplate[], TextTemplate[], ElementTemplate[]] {
+  const attributes: AttributeTemplate[] = [];
+  const texts: TextTemplate[] = [];
+  const elements: ElementTemplate[] = [];
+
+  if (element instanceof Element) {
+    attributes.push(...interpolateAttributes(element, values));
+  }
+
+  if (element.hasChildNodes()) {
+    const interpolated = interpolateNodes(element, values);
+
+    texts.push(...interpolated[0]);
+    elements.push(...interpolated[1]);
+  }
+
+  for (const node of element.childNodes) {
+    if (node instanceof Element) {
+      const interpolated = interpolate(node, values);
+
+      attributes.push(...interpolated[0]);
+      texts.push(...interpolated[1]);
+      elements.push(...interpolated[2]);
+    }
+  }
+
+  return [attributes, texts, elements];
+}
+
+function template(raw: RawTemplate): Template {
+  const marked = markValues(raw);
+  const fragment = rawFragment(marked);
+  const [attributes, texts, elements] = interpolate(fragment, raw.values);
 
   return {
-    strings: parsedTemplate.strings,
-    values: parsedTemplate.values,
-    fragment: fragment,
-    attributes: cachedOutput[0],
-    texts: cachedOutput[1],
-    elements: cachedOutput[2],
+    strings: raw.strings,
+    values: raw.values,
+    fragment,
+    texts,
+    elements,
+    attributes,
   };
 }
 
-function markElements(elements: string[]): string[] {
-  const result: string[] = [];
-
-  for (const [index, element] of elements.entries()) {
-    result.push(`<!--separator-->`);
-    result.push(element);
-  }
-
-  return result;
-}
-
-function findKeep(
-  oldValues: string[],
-  newValues: string[]
-): [number, number][] {
-  const filtered: [number, number][] = [];
-
-  for (const [newIndex, newValue] of newValues.entries()) {
-    for (const [oldIndex, oldValue] of oldValues.entries()) {
-      if (newValue === oldValue) {
-        filtered.push([newIndex, oldIndex]);
-      }
-    }
-  }
-
-  const keep: [number, number][] = [];
-  let last = [-1, -1];
-
-  for (const group of filtered) {
-    if (group[0] > last[0] && group[1] > last[1]) {
-      keep.push(group);
-      last = group;
-    }
-  }
-
-  return keep;
-}
-
-function renderElements(
-  node: Node,
-  start: Comment,
-  end: Comment,
-  oldValue: string[],
-  newValue: string[]
-): void {
-  const oldNodes: Node[] = [start];
-
-  while (oldNodes[oldNodes.length - 1].nextSibling !== end) {
-    const currentNode = oldNodes[oldNodes.length - 1].nextSibling;
-
-    if (currentNode === null) {
-      break;
-    }
-
-    oldNodes.push(currentNode);
-  }
-
-  const keep = findKeep(oldValue, newValue);
-
-  const keepNew = keep.map((x) => x[0]);
-  const keepOld = keep.map((x) => x[1]);
-
-  const remove = [...oldValue.keys()].filter((x) => !keepOld.includes(x));
-  const insert = [...newValue.keys()].filter((x) => !keepNew.includes(x));
-
-  let currentIndex = -1;
-  let oldNodeCollection: Node[][] = [];
-
-  for (const child of oldNodes.slice(1, oldNodes.length - 1)) {
-    if (
-      isCommentNode(child) &&
-      child.nodeValue !== null &&
-      child.nodeValue.trim() === "separator"
-    ) {
-      currentIndex++;
-      oldNodeCollection[currentIndex] = [child];
-    } else {
-      oldNodeCollection[currentIndex].push(child);
-    }
-  }
-
-  oldNodeCollection.push([end]);
-
-  for (const [modifier, index] of remove.entries()) {
-    for (const child of oldNodeCollection[modifier - index]) {
-      node.removeChild(child);
-    }
-
-    oldNodeCollection.splice(modifier - index, 1);
-  }
-
-  // console.log(oldNodeCollection)
-
-  for (const index of insert) {
-    // console.log(oldNodeCollection, index)
-    node.insertBefore(
-      rawFragment(`<!--separator-->${newValue[index]}`),
-      oldNodeCollection[index][0]
-    );
-  }
-}
-
-function render(target: MemoizedElement, template: RawTemplate): void {
+function render(target: MemoizedElement, rawTemplate: RawTemplate): void {
   if (
     !Object.prototype.hasOwnProperty.call(target, "memoized") ||
     typeof target.memoized === "undefined"
   ) {
-    const templateCache = cachedTemplate(template);
+    const fullTemplate = template(rawTemplate);
 
-    target.appendChild(templateCache.fragment);
-
-    Object.defineProperty(target, "memoized", {
-      value: templateCache,
-    });
+    target.appendChild(fullTemplate.fragment);
+    Object.defineProperty(target, "memoized", { value: fullTemplate });
 
     return;
   }
 
-  const attributeIndexes = target.memoized.attributes.map((x) => x.index);
-  const elementIndexes = target.memoized.elements.map((x) => x.index);
-  const textIndexes = target.memoized.texts.map((x) => x.index);
+  if (
+    !Object.prototype.hasOwnProperty.call(target, "indexes") ||
+    typeof target.indexes === "undefined"
+  ) {
+    const attributes = target.memoized.attributes.map((x) => x.index);
+    const elements = target.memoized.elements.map((x) => x.index);
+    const texts = target.memoized.texts.map((x) => x.index);
 
-  for (const [index, value] of target.memoized.values.entries()) {
-    if (value === template.values[index]) {
+    Object.defineProperty(target, "indexes", {
+      value: { attributes, elements, texts },
+    });
+  }
+
+  const attributeIndexes = target.indexes?.attributes ?? [];
+  const elementIndexes = target.indexes?.elements ?? [];
+  const textIndexes = target.indexes?.texts ?? [];
+
+  for (const [index, oldValue] of target.memoized.values.entries()) {
+    const newValue = rawTemplate.values[index];
+
+    if (oldValue === newValue) {
       continue;
     }
 
@@ -391,47 +266,39 @@ function render(target: MemoizedElement, template: RawTemplate): void {
       const { element, name } = target.memoized.attributes[
         attributeIndexes.indexOf(index)
       ];
-      const newValue = template.values[index];
 
       element.setAttribute(name, String(newValue));
     } else if (textIndexes.includes(index)) {
-      const { node } = target.memoized.texts[textIndexes.indexOf(index)];
-      const newValue = template.values[index];
+      const { text } = target.memoized.texts[textIndexes.indexOf(index)];
 
-      node.nodeValue = String(newValue);
+      text.nodeValue = String(newValue);
     } else if (elementIndexes.includes(index)) {
       const { start, end } = target.memoized.elements[
         elementIndexes.indexOf(index)
       ];
-      const newValue = template.values[index];
       const parent = start.parentNode;
 
       if (parent === null) {
+        console.error("parent missing");
         continue;
       }
 
-      if (typeof newValue === "string" || typeof value === "string") {
-        while (start.nextSibling !== end) {
-          const sibling = start.nextSibling;
+      while (start.nextSibling !== end) {
+        const sibling = start.nextSibling;
 
-          if (sibling === null) {
-            break;
-          }
-
-          parent.removeChild(sibling);
+        if (sibling === null) {
+          break;
         }
 
-        parent.insertBefore(
-          rawFragment(
-            typeof newValue === "string" ? newValue : newValue.join("")
-          ),
-          end
-        );
-      } else {
-        renderElements(parent, start, end, value, newValue);
+        parent.removeChild(sibling);
       }
+
+      parent.insertBefore(
+        rawFragment(
+          typeof newValue === "string" ? newValue : newValue.join("")
+        ),
+        end
+      );
     }
   }
-
-  target.memoized.values = template.values;
 }
