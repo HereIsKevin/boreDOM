@@ -225,6 +225,25 @@ function template(raw: RawTemplate): Template {
   };
 }
 
+function eraseNodes(
+  node: Node,
+  start: Node,
+  end: Node,
+  newValue: string
+): void {
+  while (start.nextSibling !== end) {
+    const sibling = start.nextSibling;
+
+    if (sibling === null) {
+      break;
+    }
+
+    node.removeChild(sibling);
+  }
+
+  node.insertBefore(rawFragment(newValue), end);
+}
+
 function render(target: MemoizedElement, rawTemplate: RawTemplate): void {
   if (
     !Object.prototype.hasOwnProperty.call(target, "memoized") ||
@@ -279,26 +298,14 @@ function render(target: MemoizedElement, rawTemplate: RawTemplate): void {
       const parent = start.parentNode;
 
       if (parent === null) {
-        console.error("parent missing");
         continue;
       }
 
-      while (start.nextSibling !== end) {
-        const sibling = start.nextSibling;
-
-        if (sibling === null) {
-          break;
-        }
-
-        parent.removeChild(sibling);
+      if (typeof newValue === "string") {
+        eraseNodes(parent, start, end, newValue);
+      } else {
+        eraseNodes(parent, start, end, newValue.join(""));
       }
-
-      parent.insertBefore(
-        rawFragment(
-          typeof newValue === "string" ? newValue : newValue.join("")
-        ),
-        end
-      );
     }
   }
 }
