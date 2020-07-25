@@ -286,32 +286,32 @@ function diffNodes(
 ): void {
   const [remove, insert] = diffValues(newValue, oldValue);
 
-  let current: Node | null = start;
+  let current: ChildNode = start;
   let index = -1;
 
-  while (current !== end.nextSibling && current !== null) {
-    let next: Node | null = current.nextSibling;
-
+  while (true) {
     if (
       current instanceof Comment &&
-      (current.textContent?.trim() === "separator" || current === end)
+      (current.nodeValue === "separator" || current === end)
     ) {
-      if (insert.includes(index + 1)) {
-        node.insertBefore(
-          rawFragment(`<!--separator-->${newValue[index + 1]}`),
-          current
-        );
-      }
-
       index++;
+
+      if (insert.includes(index)) {
+        current.before(rawFragment(`<!--separator-->${newValue[index]}`));
+      }
+    }
+
+    let next = current.nextSibling;
+
+    if (next === null) {
+      break;
     }
 
     if (remove.includes(index) && current !== null) {
-      node.removeChild(current);
-      current = next;
-    } else {
-      current = current.nextSibling;
+      current.remove();
     }
+
+    current = next;
   }
 }
 
