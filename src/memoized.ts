@@ -289,7 +289,7 @@ function diffNodes(
   let current: Node | null = start;
   let index = -1;
 
-  while (!(current === end.nextSibling || current === null)) {
+  while (current !== end.nextSibling && current !== null) {
     let next: Node | null = current.nextSibling;
 
     if (
