@@ -142,7 +142,7 @@ function interpolateNodes(
 
   let start: Comment | undefined;
   let end: Comment | undefined;
-  let index: number = -1;
+  let index = -1;
 
   for (const node of element.childNodes) {
     // proceed only if the current node is a comment

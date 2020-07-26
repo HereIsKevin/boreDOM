@@ -60,6 +60,8 @@ function diffNodes(
   let current: ChildNode = start;
   let index = -1;
 
+  /* eslint-disable no-constant-condition */
+
   while (true) {
     if (
       current instanceof Comment &&
@@ -72,7 +74,7 @@ function diffNodes(
       }
     }
 
-    let next = current.nextSibling;
+    const next = current.nextSibling;
 
     if (next === null) {
       break;
@@ -84,4 +86,6 @@ function diffNodes(
 
     current = next;
   }
+
+  /* eslint-enable no-constant-condition */
 }
