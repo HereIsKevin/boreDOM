@@ -4,12 +4,17 @@ export { render };
 
 import { diffNodes, eraseNodes } from "./diff";
 import { RawTemplate, RawValues } from "./raw";
-import { TemplateAttribute, TemplateElement, TemplateText, template } from "./template";
+import {
+  TemplateAttribute,
+  TemplateElement,
+  TemplateText,
+  template,
+} from "./template";
 
 /* eslint-enable sort-imports */
 
 interface Cache {
-  values: RawValues
+  values: RawValues;
   attributes: Record<number, TemplateAttribute>;
   elements: Record<number, TemplateElement>;
   texts: Record<number, TemplateText>;
@@ -28,6 +33,7 @@ function objectZip<K extends string | number, V>(
   const result = {} as Record<K, V>;
 
   for (const [index, key] of keys.entries()) {
+    // set the corresponding value to the key
     result[key] = values[index];
   }
 
@@ -58,7 +64,9 @@ function render(target: Element, rawTemplate: RawTemplate): void {
 
     // filter out the indexes of all the attributes
     const attributeIndexes = fullTemplate.attributes.map((x) => x.index);
+    // filter out the indexes of all the elements
     const elementIndexes = fullTemplate.elements.map((x) => x.index);
+    // filter out the indexes of all the texts
     const textIndexes = fullTemplate.texts.map((x) => x.index);
 
     // cache the template values and zipped index-based dynamic items
@@ -66,47 +74,60 @@ function render(target: Element, rawTemplate: RawTemplate): void {
       values: fullTemplate.values,
       attributes: objectZip(attributeIndexes, fullTemplate.attributes),
       elements: objectZip(elementIndexes, fullTemplate.elements),
-      texts: objectZip(textIndexes, fullTemplate.texts)
+      texts: objectZip(textIndexes, fullTemplate.texts),
     });
 
     return;
   }
 
+  // iterate through each value in the cache
   for (let index = 0; index < cache.values.length; index++) {
     const oldValue = cache.values[index];
     const newValue = rawTemplate.values[index];
 
+    // proceed only if the old and new values are different
     if (oldValue === newValue) {
       continue;
     }
 
     if (index in cache.attributes) {
+      // extract element nad name of attribute from cache
       const { element, name } = cache.attributes[index];
 
+      // make sure the new value is not an array
       if (Array.isArray(newValue)) {
         throw new TypeError("attribute value cannot be an array");
       }
 
+      // update the attribute
       element.setAttribute(name, newValue);
     } else if (index in cache.texts) {
+      // extract the text node from the cache
       const { text } = cache.texts[index];
 
+      // make sure the new value is not an array
       if (Array.isArray(newValue)) {
         throw new TypeError("text value cannot be an array");
       }
 
+      // update the text node value
       text.nodeValue = newValue;
     } else if (index in cache.elements) {
+      // extract the start and end comments from the cache
       const { start, end } = cache.elements[index];
+      // find the parent node of the nodes
       const parent = start.parentNode;
 
+      // make sure there is a parent
       if (parent === null) {
         throw new Error("parent node is missing for start");
       }
 
       if (Array.isArray(oldValue) && Array.isArray(newValue)) {
+        // fully diff the old and new values if both are arrays
         diffNodes(start, end, newValue, oldValue);
       } else {
+        // erase and replace to nodes if any one of them are strings
         eraseNodes(
           start,
           end,
@@ -116,6 +137,8 @@ function render(target: Element, rawTemplate: RawTemplate): void {
     }
   }
 
+  // update the values in the cache
   cache.values = rawTemplate.values;
+  // update the cache in the WeakMap
   window.templates.set(target, cache);
 }
