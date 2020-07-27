@@ -7,9 +7,14 @@ interface RawTemplate {
   values: RawValues;
 }
 
-function rawFragment(template: string): DocumentFragment {
-  // create a document fragment from the string provided
-  return document.createRange().createContextualFragment(template);
+function rawFragment(value: string): DocumentFragment {
+  // create a template for parsing the html value
+  const template = document.createElement("template");
+  // parse the value through innerHTML
+  template.innerHTML = value;
+
+  // retrive the template content as a document fragment
+  return template.content;
 }
 
 function html(
