@@ -61,35 +61,41 @@ function diffNodes(
 ): void {
   const [remove, insert] = diffValues(newValue, oldValue);
 
-  let current: ChildNode = start;
-  let index = -1;
+  let index = 0;
+  let current = start.nextSibling;
+  const groups: ChildNode[][] = [];
 
-  /* eslint-disable no-constant-condition */
-
-  while (true) {
-    if (
-      current instanceof Comment &&
-      (current.nodeValue === "separator" || current === end)
-    ) {
+  while (current !== end && current !== null) {
+    if (current instanceof Comment && current.nodeValue === "separator") {
+      groups[index] = [current];
       index++;
-
-      if (insert.includes(index)) {
-        current.before(rawFragment(`<!--separator-->${newValue[index]}`));
-      }
+    } else {
+      groups[groups.length - 1].push(current);
     }
 
-    const next = current.nextSibling;
-
-    if (next === null) {
-      break;
-    }
-
-    if (remove.includes(index) && current !== null) {
-      current.remove();
-    }
-
-    current = next;
+    current = current.nextSibling;
   }
 
-  /* eslint-enable no-constant-condition */
+  for (const [modifier, index] of remove.entries()) {
+    const group = groups[index - modifier];
+
+    for (const node of group) {
+      node.remove();
+    }
+
+    groups.splice(index - modifier, 1);
+  }
+
+  for (const index of insert) {
+    const group = groups[index];
+    const fragment = rawFragment(`<!--separator-->${newValue[index]}`);
+
+    groups.splice(index, 0, [...fragment.childNodes]);
+
+    if (typeof group === "undefined") {
+      end.before(fragment);
+    } else {
+      group[group.length - 1].after(fragment);
+    }
+  }
 }
