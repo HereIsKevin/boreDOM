@@ -92,12 +92,12 @@ function recursiveProxy(value: Structure, handler: () => void): unknown {
         // pretend key is a string to allow strange behavior
         current = target[key as string];
       } else {
-        // throw error if trying to proxy construcable objects or primitives
+        // throw error if trying to proxy constructable objects or primitives
         throw new TypeError("cannot access properties of proxy target");
       }
 
       if (Array.isArray(current) || isRecord(current)) {
-        // continue proxying if result is a array or record
+        // continue adding proxies if result is a array or record
         return recursiveProxy(current, handler);
       } else {
         // return value otherwise
@@ -112,7 +112,7 @@ function recursiveProxy(value: Structure, handler: () => void): unknown {
         // pretend key is a string to allow strange behavior
         target[key as string] = value;
       } else {
-        // throw error if constructable object of primitive was somehow proxied
+        // throw error if constructable object of primitive is in a proxy
         throw new TypeError("cannot access properties of proxy target");
       }
 

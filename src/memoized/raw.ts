@@ -13,7 +13,7 @@ function rawFragment(value: string): DocumentFragment {
   // parse the value through innerHTML
   template.innerHTML = value;
 
-  // retrive the template content as a document fragment
+  // retrieve the template content as a document fragment
   return template.content;
 }
 
