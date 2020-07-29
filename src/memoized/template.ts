@@ -33,8 +33,8 @@ function prepare(strings: ReadonlyArray<string>): string {
 
   // iterate without the first item due to interpolation
   for (let index = 1; index < strings.length; index++) {
-    // use {index} as markers for interpolation
-    result += `{${index - 1}}`;
+    // use <!--index--> as comment markers for interpolation
+    result += `<!--${index - 1}-->`;
     // close current item with the string from strings
     result += strings[index];
   }
@@ -53,8 +53,8 @@ function interpolateAttributes(
     const value = element.getAttribute(name) ?? "";
 
     // when a marker is found in the attribute value
-    if (/^\{[0-9]+\}$/.test(value)) {
-      const index = Number(value.slice(1, value.length - 1));
+    if (/^<!--[0-9]+-->$/.test(value)) {
+      const index = Number(value.slice(4, value.length - 3));
       const actual = values[index];
 
       // throw an error if the value is an array
@@ -86,24 +86,18 @@ function markElements(values: string[]): string {
 }
 
 function interpolateFragment(
-  value: string,
+  index: number,
   values: RawValues
 ): DocumentFragment {
-  // find all markers in the value
-  const interpolated = value.replace(/\{[0-9]+\}/g, (x) => {
-    // get the index from the marker
-    const index = Number(x.slice(1, x.length - 1));
-    // get the actual value from the values
-    const actual = values[index];
-
-    // mark element for arrays
-    return `<!--${index}-->${
-      Array.isArray(actual) ? markElements(actual) : actual
-    }<!--${index}-->`;
-  });
+  // get the actual value from the values
+  const actual = values[index];
+  // interpolate and generate value
+  const value = `<!--${index}-->${
+    Array.isArray(actual) ? markElements(actual) : actual
+  }<!--${index}-->`;
 
   // generate document fragment from interpolated value
-  return rawFragment(interpolated);
+  return rawFragment(value);
 }
 
 function interpolateValues(element: Node, values: RawValues): void {
@@ -115,9 +109,9 @@ function interpolateValues(element: Node, values: RawValues): void {
     const value = current.nodeValue ?? "";
 
     // when the current node is a text node and has markers
-    if (current instanceof Text && /\{[0-9]+\}/.test(value)) {
+    if (current instanceof Comment && /^[0-9]+$/.test(value)) {
       // interpolate the markers and generate document fragment
-      const fragment = interpolateFragment(value, values);
+      const fragment = interpolateFragment(Number(value), values);
       const length = fragment.childNodes.length;
 
       // replace current node with fragment
