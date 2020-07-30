@@ -3,9 +3,15 @@ import { memoized } from "../../dist/esm/index.js";
 const { html, render } = memoized;
 
 function template(value: number) {
-  return html`<div id="display">Value is currently: ${String(value)}</div>
+  return html`
+    <div id="display">Value is currently: ${String(value)}</div>
     <button id="increment">Click to increment</button>
-    ${[...Array(value).keys()].map((x) => `<div>${x}</div>`)}`;
+    <table>
+      <tbody>
+        ${[...Array(value).keys()].map((x) => `<tr><td>${x}</td></tr>`)}
+      </tbody>
+    </table>
+  `;
 }
 
 function update(node: Element, value: number) {
