@@ -19,16 +19,18 @@ function initialize() {
 
   const app = document.getElementById("app");
 
-  if (app === null)  {
+  if (app === null) {
     throw new Error("app missing");
   }
 
   app.appendChild(
-    html`<div id="display">
+    html`
+      <div id="display">
         Value is currently:
         <!--separator-->0
       </div>
-      <button id="increment">Click to increment</button>`
+      <button id="increment">Click to increment</button>
+    `
   );
 
   const display = document.getElementById("display")?.childNodes[2];
@@ -42,9 +44,9 @@ function initialize() {
     console.time("render");
     value++;
     display.nodeValue = String(value);
-    app.appendChild(html`<div>${String(value - 1)}</div>`)
+    app.appendChild(html`<div>${String(value - 1)}</div>`);
     console.timeEnd("render");
-  })
+  });
 
   console.timeEnd("render");
 }

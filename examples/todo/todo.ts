@@ -65,10 +65,10 @@ class ToDo {
   render() {
     render(
       this.root,
-      html(
-        `<div id="todo-controls">
-          <input type="text" id="todo-controls-content">
-          <input type="button" value="Add" id="todo-controls-add">
+      html(`
+        <div id="todo-controls">
+          <input type="text" id="todo-controls-content" />
+          <input type="button" value="Add" id="todo-controls-add" />
         </div>
         <div id="todo-items">
           ${Array.from(this.items.entries(), (x) => {
@@ -77,23 +77,23 @@ class ToDo {
             const checked = x[1][1];
 
             return `
-              <div class="todo-item" data-index="${index}">
-                <label
-                  ${checked ? 'style="text-decoration: line-through;"' : ""}
-                  class="todo-item-label"
+            <div class="todo-item" data-index="${index}">
+              <label
+                ${checked ? 'style="text-decoration: line-through;"' : ""}
+                class="todo-item-label"
+              >
+                <input type="checkbox"
+                  class="todo-item-checkbox"
+                  ${checked ? "checked" : ""}
                 >
-                  <input type="checkbox"
-                    class="todo-item-checkbox"
-                    ${checked ? "checked" : ""}
-                  >
-                  ${content}
-                </label>
-                <input type="button" value="Remove" class="todo-item-remove">
-              </div>
-            `;
+                ${content}
+              </label>
+              <input type="button" value="Remove" class="todo-item-remove">
+            </div>
+          `;
           }).join("")}
-        </div>`
-      )
+        </div>
+      `)
     );
   }
 }

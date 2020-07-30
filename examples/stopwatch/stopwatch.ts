@@ -59,6 +59,6 @@ class StopwatchView extends TimedComponent {
   @property seconds: number = 0;
 
   render() {
-    return html` <div>${this.seconds.toFixed(2)}</div> `;
+    return html`<div>${this.seconds.toFixed(2)}</div>`;
   }
 }

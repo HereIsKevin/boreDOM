@@ -3,9 +3,11 @@ import { dom } from "../../dist/esm/index.js";
 const { html, render } = dom;
 
 function template(value: number) {
-  return html(`<div id="display">Value is currently: ${String(value)}</div>
+  return html(`
+    <div id="display">Value is currently: ${String(value)}</div>
     <button id="increment">Click to increment</button>
-    ${[...Array(value).keys()].map((x) => `<div>${x}</div>`).join("")}`);
+    ${[...Array(value).keys()].map((x) => `<div>${x}</div>`).join("")}
+  `);
 }
 
 function update(node: Element, value: number) {
