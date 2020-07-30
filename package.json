@@ -13,8 +13,8 @@
   "scripts": {
     "clean:development": "shx rm -rf ./build/",
     "clean:release": "shx rm -rf ./dist/",
-    "clean:examples": "shx rm ./examples/**/*.js",
-    "clean:tests": "shx rm ./test/*.js",
+    "clean:examples": "shx rm -f ./examples/**/*.js",
+    "clean:tests": "shx rm -f ./test/*.js",
     "clean:docs": "shx rm -rf ./docs/",
     "clean": "npm-run-all --parallel clean:development clean:release",
     "watch:tsc": "tsc --watch",
