@@ -1,13 +1,8 @@
-export { eraseNodes as diffNodes, eraseNodes };
+export { eraseNodes };
 
 import { rawFragment } from "./raw";
 
-function eraseNodes(
-  start: Comment,
-  end: Comment,
-  value: string | string[],
-  useless: string[]
-): void {
+function eraseNodes(start: Comment, end: Comment, value: string): void {
   // iterate through all nodes in between start and end
   while (start.nextSibling !== end) {
     const sibling = start.nextSibling;
@@ -22,5 +17,5 @@ function eraseNodes(
   }
 
   // insert the value as a fragment after start
-  start.after(rawFragment(Array.isArray(value) ? value.join("") : value));
+  start.after(rawFragment(value));
 }

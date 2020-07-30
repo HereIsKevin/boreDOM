@@ -2,7 +2,7 @@ export { render };
 
 /* eslint-disable sort-imports */
 
-import { diffNodes, eraseNodes } from "./diff";
+import { eraseNodes } from "./diff";
 import { RawTemplate, RawValues } from "./raw";
 import {
   TemplateAttribute,
@@ -123,17 +123,12 @@ function render(target: Element, rawTemplate: RawTemplate): void {
         throw new Error("parent node is missing for start");
       }
 
-      if (Array.isArray(oldValue) && Array.isArray(newValue)) {
-        // fully diff the old and new values if both are arrays
-        diffNodes(start, end, newValue, oldValue);
-      } else {
-        // erase and replace to nodes if any one of them are strings
-        eraseNodes(
-          start,
-          end,
-          Array.isArray(newValue) ? newValue.join("") : newValue
-        );
-      }
+      // erase and replace to nodes
+      eraseNodes(
+        start,
+        end,
+        Array.isArray(newValue) ? newValue.join("") : newValue
+      );
     }
   }
 
