@@ -140,8 +140,42 @@ function isIdenticalNode(node1: Node, node2: Node): boolean {
  */
 
 function isSameNode(node1: Node, node2: Node): boolean {
-  // make shallow clones of nodes to compare, so children are removed
-  return node1.cloneNode(false).isEqualNode(node2.cloneNode(false));
+  let textNode = true;
+
+  if (node2 instanceof Element && node2.getAttributeNames().length > 0) {
+    textNode = false;
+  }
+
+  if (textNode) {
+    if (node1 instanceof Element && node1.getAttributeNames().length > 0) {
+      textNode = false;
+    }
+  }
+
+  if (textNode) {
+    for (const node of node2.childNodes) {
+      if (!(node instanceof Text || node instanceof Comment)) {
+        textNode = false;
+        break;
+      }
+    }
+  }
+
+  if (textNode) {
+    for (const node of node1.childNodes) {
+      if (!(node instanceof Text || node instanceof Comment)) {
+        textNode = false;
+        break;
+      }
+    }
+  }
+
+  if (textNode) {
+    return node1.isEqualNode(node2);
+  } else {
+    // make shallow clones of nodes to compare, so children are removed
+    return node1.cloneNode(false).isEqualNode(node2.cloneNode(false));
+  }
 }
 
 /**
@@ -169,23 +203,56 @@ function isRelatedNode(node1: Node, node2: Node): boolean {
  */
 
 function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
-  const filteredNodes: number[][] = [];
+  const keepNodes: number[][] = [];
+
+  let newIndex = 0;
+  let oldIndex = 0;
+
+  while (newIndex < newElement.childNodes.length && oldIndex < oldElement.childNodes.length) {
+    const newNode = newElement.childNodes[newIndex];
+    const oldNode = oldElement.childNodes[oldIndex];
+
+    if (isSameNode(newNode, oldNode)) {
+      keepNodes.push([newIndex, oldIndex]);
+      oldIndex++;
+    }
+
+    newIndex++;
+  }
+
+  return keepNodes;
+
+  /*const filteredNodes: number[][] = [];
+
+  console.time("finding");
 
   for (const [newIndex, newNode] of newElement.childNodes.entries()) {
+    let last: number = -1;
+    let pushed = false;
+
     for (const [oldIndex, oldNode] of oldElement.childNodes.entries()) {
-      if (
-        isIdenticalNode(newNode, oldNode) ||
-        isSameNode(newNode, oldNode) ||
-        isRelatedNode(newNode, oldNode)
-      ) {
+      if (isIdenticalNode(newNode, oldNode)) {
         // save indexes when the node could be kept
         filteredNodes.push([newIndex, oldIndex]);
+        // console.log([newIndex, oldIndex])
+        pushed = true;
+        break;
+      } else if (isSameNode(newNode, oldNode)) {
+        last = oldIndex;
       }
+    }
+
+    if (!pushed && last != -1) {
+      filteredNodes.push([newIndex, last])
     }
   }
 
+  console.timeEnd("finding");
+
   const keepNodes: number[][] = [];
   let lastNode: number[] = [-1, -1];
+
+  console.time("filtering");
 
   for (const node of filteredNodes) {
     if (node[0] > lastNode[0] && node[1] > lastNode[1]) {
@@ -195,7 +262,11 @@ function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
     }
   }
 
-  return keepNodes;
+  console.timeEnd("filtering");
+
+  // console.log(keepNodes)
+
+  return keepNodes;*/
 }
 
 /**
