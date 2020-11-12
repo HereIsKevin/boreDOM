@@ -2,7 +2,7 @@ export { render };
 
 /* eslint-disable sort-imports */
 
-import { eraseNodes } from "./diff";
+import { diffNodes } from "./diff";
 import { RawTemplate, RawValues } from "./raw";
 import {
   TemplateAttribute,
@@ -123,12 +123,7 @@ function render(target: Element, rawTemplate: RawTemplate): void {
         throw new Error("parent node is missing for start");
       }
 
-      // erase and replace to nodes
-      eraseNodes(
-        start,
-        end,
-        Array.isArray(newValue) ? newValue.join("") : newValue
-      );
+      diffNodes(start, end, newValue);
     }
   }
 
