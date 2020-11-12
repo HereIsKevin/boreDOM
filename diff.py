@@ -25,6 +25,8 @@ def diff(old_values, new_values):
             cache.append(old_values.pop(old_index))
             print("remove")
 
+    print(old_values)
+
     index = 0
 
     while index < len(new_values):
@@ -49,5 +51,5 @@ def diff(old_values, new_values):
     return old_values
 
 
-# print(diff(list("ABCABBA"), list("CBABAC")))
+print(diff(list("ABCABBA"), list("CBABAC")))
 print(diff(list("ABCDEFG"), list("ABCEDFGA")))
