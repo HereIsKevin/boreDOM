@@ -1,6 +1,6 @@
 export { RawTemplate, RawValues, html, rawFragment };
 
-type RawValues = (string | string[])[];
+type RawValues = string[];
 
 interface RawTemplate {
   strings: TemplateStringsArray;

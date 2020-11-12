@@ -57,11 +57,6 @@ function interpolateAttributes(
       const index = Number(value.slice(4, value.length - 3));
       const actual = values[index];
 
-      // throw an error if the value is an array
-      if (Array.isArray(actual)) {
-        throw new TypeError("attribute value cannot be an array");
-      }
-
       // set the attribute to the actual value
       element.setAttribute(name, actual);
       // mark the attribute as a dynamic item
@@ -72,19 +67,6 @@ function interpolateAttributes(
   return attributes;
 }
 
-function markElements(values: string[]): string {
-  let output = "";
-
-  // iterate through values
-  for (const value of values) {
-    // add a separator before each value
-    output += "<!--separator-->";
-    output += value;
-  }
-
-  return output;
-}
-
 function interpolateFragment(
   index: number,
   values: RawValues
@@ -92,9 +74,7 @@ function interpolateFragment(
   // get the actual value from the values
   const actual = values[index];
   // interpolate and generate value
-  const value = `<!--${index}-->${
-    Array.isArray(actual) ? markElements(actual) : actual
-  }<!--${index}-->`;
+  const value = `<!--${index}-->${actual}<!--${index}-->`;
 
   // generate document fragment from interpolated value
   return rawFragment(value);
