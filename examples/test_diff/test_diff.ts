@@ -3,7 +3,7 @@ import { memoized } from "../../dist/esm/index.js";
 const { html, render } = memoized;
 
 const createRows = (count: number) =>
-  [...Array(count + 100).keys()].slice(count).map((x) => `<div>${x}</div>`);
+  [...Array(count + 1000).keys()].slice(count).map((x) => `<div>${x}</div>`);
 
 const template = (rows: string[]) =>
   html`
@@ -14,7 +14,7 @@ const template = (rows: string[]) =>
       <button id="update">Update</button>
     </div>
     <div>
-      ${rows}
+      ${rows.join("")}
     </div>
   `;
 

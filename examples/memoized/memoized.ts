@@ -8,7 +8,7 @@ function template(value: number) {
     <button id="increment">Click to increment</button>
     <table>
       <tbody>
-        ${[...Array(value).keys()].map((x) => `<tr><td>${x}</td></tr>`)}
+        ${[...Array(value).keys()].map((x) => `<tr><td>${x}</td></tr>`).join("")}
       </tbody>
     </table>
   `;
