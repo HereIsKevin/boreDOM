@@ -47,6 +47,42 @@
 export { html, render };
 
 /**
+ * Type guard for checking of a node is a text node
+ *
+ * @param node Node to be checked
+ *
+ * @returns Node is text node or not
+ */
+
+function isTextNode(node: Node): node is Text {
+  return node.nodeType === Node.TEXT_NODE;
+}
+
+/**
+ * Type guard for checking of a node is an element node
+ *
+ * @param node Node to be checked
+ *
+ * @returns Node is element node or not
+ */
+
+function isElementNode(node: Node): node is Element {
+  return node.nodeType === Node.ELEMENT_NODE;
+}
+
+/**
+ * Type guard for checking of a node is a comment node
+ *
+ * @param node Node to be checked
+ *
+ * @returns Node is comment node or not
+ */
+
+function isCommentNode(node: Node): node is Comment {
+  return node.nodeType === Node.COMMENT_NODE;
+}
+
+/**
  * Generates HTML nodes as a document fragment from strings
  *
  * @param template The string to be converted into HTML nodes
@@ -54,33 +90,48 @@ export { html, render };
  * @returns The HTML nodes as a document fragment
  */
 
-function html(value: string): DocumentFragment {
-  // create a template for parsing the html value
-  const template = document.createElement("template");
-  // parse the value through innerHTML
-  template.innerHTML = value;
-
-  // retrieve the template content as a document fragment
-  return template.content;
+function html(template: string): DocumentFragment {
+  return document.createRange().createContextualFragment(template);
 }
 
-function isSimpleNode(node: Node): boolean {
-  if (node instanceof Text) {
-    return true;
-  } else {
-    const attributes =
-      node instanceof Element ? node.getAttributeNames().length === 0 : true;
+/**
+ * Removes empty text nodes, comment nodes, or other useless nodes
+ *
+ * @param element Node or element to be sanitized
+ */
 
-    return (
-      node.childNodes.length === 1 &&
-      node.childNodes[0] instanceof Text &&
-      attributes
-    );
+function sanitizeNode(element: Node): void {
+  for (const node of element.childNodes) {
+    if (
+      isCommentNode(node) ||
+      (isTextNode(node) && (node.textContent || "").trim() === "")
+    ) {
+      // remove all comment nodes or empty text nodes
+      node.remove();
+    } else if (isElementNode(node)) {
+      // continue sanitizing element child nodes
+      sanitizeNode(node);
+    }
   }
 }
 
 /**
- * Helper function to check if two nodes are the same based on the algorithm.
+ * Helper function to check if two nodes are identical, checking to see if they
+ * are equal, including their children
+ *
+ * @param node1 First node to be checked
+ * @param node2 Second node to be checked
+ *
+ * @returns First node is identical second node or not
+ */
+
+function isIdenticalNode(node1: Node, node2: Node): boolean {
+  return node1.isEqualNode(node2);
+}
+
+/**
+ * Helper function to check if two nodes are the same, checking to see if they
+ * are equal, excluding their children
  *
  * @param node1 First node to be checked
  * @param node2 Second node to be checked
@@ -89,12 +140,22 @@ function isSimpleNode(node: Node): boolean {
  */
 
 function isSameNode(node1: Node, node2: Node): boolean {
-  if (isSimpleNode(node1) && isSimpleNode(node2)) {
-    return node1.isEqualNode(node2);
-  } else {
-    // make shallow clones of nodes to compare, so children are removed
-    return node1.cloneNode(false).isEqualNode(node2.cloneNode(false));
-  }
+  // make shallow clones of nodes to compare, so children are removed
+  return node1.cloneNode(false).isEqualNode(node2.cloneNode(false));
+}
+
+/**
+ * Helper function to check if two nodes are related, checking to see if they
+ * have the same name
+ *
+ * @param node1 First node to be checked
+ * @param node2 Second node to be checked
+ *
+ * @returns First node has the same name as the second node or not
+ */
+
+function isRelatedNode(node1: Node, node2: Node): boolean {
+  return node1.nodeName === node2.nodeName;
 }
 
 /**
@@ -107,41 +168,32 @@ function isSameNode(node1: Node, node2: Node): boolean {
  *   locations in newElement
  */
 
-function findKeepNodes(oldElement: Node, newElement: Node): [number, number][] {
-  // nodes to keep with new and old index pairs
-  const keepNodes: [number, number][] = [];
+function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
+  const filteredNodes: number[][] = [];
 
-  // current index in new element
-  let newIndex = 0;
-  // current index in old element
-  let oldIndex = 0;
-
-  let oldTemp = 0;
-
-  // length of new element child nodes
-  const newLength = newElement.childNodes.length;
-  // length of old element child nodes
-  const oldLength = oldElement.childNodes.length;
-
-  // continue as long as both indexes have not hit the end
-  while (newIndex < newLength && oldIndex < oldLength) {
-    // retreive the current node from the new element
-    const newNode = newElement.childNodes[newIndex];
-    // retreive the current node from the old element
-    const oldNode = oldElement.childNodes[oldIndex];
-
-    // check if new node and old node are the same
-    if (isSameNode(newNode, oldNode)) {
-      // save the indexes for same nodes
-      keepNodes.push([newIndex, oldIndex]);
-      oldIndex++;
+  for (const [newIndex, newNode] of newElement.childNodes.entries()) {
+    for (const [oldIndex, oldNode] of oldElement.childNodes.entries()) {
+      if (
+        isIdenticalNode(newNode, oldNode) ||
+        isSameNode(newNode, oldNode) ||
+        isRelatedNode(newNode, oldNode)
+      ) {
+        // save indexes when the node could be kept
+        filteredNodes.push([newIndex, oldIndex]);
+      }
     }
-
-    // continue onto next old index
-    newIndex++;
   }
 
-  // console.log(keepNodes);
+  const keepNodes: number[][] = [];
+  let lastNode: number[] = [-1, -1];
+
+  for (const node of filteredNodes) {
+    if (node[0] > lastNode[0] && node[1] > lastNode[1]) {
+      // keep as many nodes compatible with each other as possible
+      keepNodes.push(node);
+      lastNode = node;
+    }
+  }
 
   return keepNodes;
 }
@@ -155,13 +207,13 @@ function findKeepNodes(oldElement: Node, newElement: Node): [number, number][] {
 
 function patchAttributes(oldNode: Node, newNode: Node): void {
   if (
-    oldNode instanceof Text &&
-    newNode instanceof Text &&
+    isTextNode(oldNode) &&
+    isTextNode(newNode) &&
     oldNode.nodeValue !== newNode.nodeValue
   ) {
     // update text for text nodes
     oldNode.nodeValue = newNode.nodeValue;
-  } else if (oldNode instanceof Element && newNode instanceof Element) {
+  } else if (isElementNode(oldNode) && isElementNode(newNode)) {
     for (const attribute of newNode.getAttributeNames()) {
       if (oldNode.getAttribute(attribute) !== newNode.getAttribute(attribute)) {
         // update attribute if it is different
@@ -230,6 +282,9 @@ function patchNode(oldNode: Node, newNode: Node): void {
  */
 
 function render(oldElement: Node, newElement: Node): void {
+  sanitizeNode(oldElement);
+  sanitizeNode(newElement);
+
   if (oldElement.childNodes.length === 0) {
     // move all new nodes over if old node does not have any children
     while (newElement.firstChild) {
