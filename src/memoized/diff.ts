@@ -107,6 +107,17 @@ function diffNodes(start: Comment, end: Comment, value: string): void {
     return;
   }
 
+  if (newNodes.length === 0) {
+    let next = start.nextSibling;
+
+    while (next !== null && next !== end) {
+      next.remove();
+      next = start.nextSibling;
+    }
+
+    return;
+  }
+
   let oldIndex = 0
   let newIndex = 0
 
