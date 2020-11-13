@@ -2,168 +2,185 @@ export { diffNodes };
 
 import { rawFragment } from "./raw";
 
-/*
-function includesNode(nodes: Node[], value: Node): boolean {
-  for (const node of nodes) {
-    if (node.isEqualNode(value)) {
-      return true;
-    }
-  }
-
-  return false;
+function isChildNode(value: Node): value is ChildNode {
+  return value.parentNode !== null;
 }
 
-function indexOfNode(nodes: Node[], value: Node): number {
-  for (let index = 0; index < nodes.length; index++) {
-    if (nodes[index].isEqualNode(value)) {
-      return index;
-    }
+class NodeCollection<T extends Node> {
+  private nodes: T[];
+  private backing: boolean;
+
+  public constructor(nodes: ArrayLike<T>, backing: boolean = true) {
+    this.nodes = Array.from(nodes);
+    this.backing = backing;
   }
 
-  return -1;
-}
+  public static collect(
+    start: Node,
+    end: Node,
+    backing: boolean = true
+  ): NodeCollection<ChildNode> {
+    const nodes: ChildNode[] = [];
 
-function diffNodes(start: Comment, end: Comment, value: string): void {
-  console.log("asdf")
+    let current = start.nextSibling;
 
-  const finalNodes = Array.from(rawFragment(value).childNodes);
-  const cache: Node[] = [];
-
-  let current = start.nextSibling;
-  let index = 0;
-
-  while (true) {
-    if (current === null) {
-      break;
-    }
-
-    const final = finalNodes[index];
-
-    if (current.isEqualNode(final)) {
-      index++;
+    while (current !== end && current !== null) {
+      nodes.push(current);
       current = current.nextSibling;
-    } else if (includesNode(cache, final)) {
-      const cacheIndex = indexOfNode(cache, final);
-      const cacheNode = cache.splice(cacheIndex, 1)[0];
-      current.replaceWith(cacheNode);
+    }
 
-      cache.push(current);
-      current = cacheNode as ChildNode;
-    } else if (index < finalNodes.length) {
-      current.replaceWith(final.cloneNode(true));
+    return new NodeCollection(nodes, backing);
+  }
 
-      cache.push(current);
-      current = final;
-    } else if (current.nextSibling !== end) {
-      current.nextSibling?.remove();
+  private retrieve(index: number): ChildNode {
+    const node = this.nodes[index];
+
+    if (!isChildNode(node)) {
+      throw new TypeError("node must be ChildNode");
+    }
+
+    return node;
+  }
+
+  public values(): T[] {
+    return this.nodes;
+  }
+
+  public length(): number {
+    return this.nodes.length;
+  }
+
+  public get(index: number): T {
+    return this.nodes[index];
+  }
+
+  public set(index: number, value: T): void {
+    const node = this.retrieve(index);
+
+    if (this.backing) {
+      node.replaceWith(value);
+    }
+
+    this.nodes[index] = value;
+  }
+
+  public append(...values: T[]): void {
+    const node = this.retrieve(this.length() - 1);
+
+    if (this.backing) {
+      node.after(...values);
+    }
+
+    this.nodes.push(...values);
+  }
+
+  public insert(index: number, ...values: T[]): void {
+    const length = this.length();
+
+    if (index > length) {
+      throw new Error(`cannot insert node past index of ${length}`);
+    } else if (index == length) {
+      this.append(...values);
     } else {
-      break;
-    }
-  }
-}
-*/
+      const node = this.retrieve(index);
 
-function includesNode(nodes: Node[], value: Node): boolean {
-  for (const node of nodes) {
-    if (node.isEqualNode(value)) {
-      return true;
+      if (this.backing) {
+        node.before(...values);
+      }
+
+      this.nodes.splice(index, 0, ...values);
     }
   }
 
-  return false;
-}
+  public pop(index: number): T {
+    const node = this.retrieve(index);
 
-function indexOfNode(nodes: Node[], value: Node): number {
-  for (let index = 0; index < nodes.length; index++) {
-    if (nodes[index].isEqualNode(value)) {
-      return index;
+    if (this.backing) {
+      node.remove();
     }
+
+    return this.nodes.splice(index, 1)[0];
   }
 
-  return -1;
-}
-
-function collectNodes(start: Comment, end: Comment): Node[] {
-  const nodes: Node[] = [];
-
-  let current = start.nextSibling;
-
-  while (current !== end && current !== null) {
-    nodes.push(current);
-    current = current.nextSibling;
+  public remove(index: number): void {
+    this.pop(index);
   }
 
-  return nodes;
+  public clear(): void {
+    if (this.backing) {
+      while (this.length() > 0) {
+        this.remove(0);
+      }
+    }
+
+    this.nodes.splice(0, this.length());
+  }
+
+  public indexOf(value: T): number {
+    for (let index = 0; index < this.length(); index++) {
+      if (this.retrieve(index).isEqualNode(value)) {
+        return index;
+      }
+    }
+
+    return -1;
+  }
+
+  public includes(value: T): boolean {
+    return this.indexOf(value) !== -1;
+  }
 }
 
 function diffNodes(start: Comment, end: Comment, value: string): void {
-  const oldNodes = collectNodes(start, end);
-  const newNodes = Array.from(rawFragment(value).childNodes);
+  const oldNodes = NodeCollection.collect(start, end);
+  const newNodes = new NodeCollection(rawFragment(value).childNodes);
 
-  // console.log(oldNodes, newNodes);
-
-  if (oldNodes.length === 0) {
-    start.after(...newNodes);
+  if (oldNodes.length() === 0) {
+    start.after(...newNodes.values());
     return;
   }
 
-  if (newNodes.length === 0) {
-    let next = start.nextSibling;
-
-    while (next !== null && next !== end) {
-      next.remove();
-      next = start.nextSibling;
-    }
-
+  if (newNodes.length() === 0) {
+    oldNodes.clear();
     return;
   }
 
-  let oldIndex = 0
-  let newIndex = 0
+  let oldIndex = 0;
+  let newIndex = 0;
 
-  const cache: Node[] = [];
+  const cache = new NodeCollection<ChildNode>([], false);
 
-  for (const newNode of newNodes) {
-    if (oldIndex >= oldNodes.length) {
+  for (const newNode of newNodes.values()) {
+    if (oldIndex >= oldNodes.length()) {
       break;
     }
 
-    const oldNode = oldNodes[oldIndex];
+    const oldNode = oldNodes.get(oldIndex);
 
     if (newNode.isEqualNode(oldNode)) {
       newIndex++;
       oldIndex++;
-      // console.log("same");
     } else {
       newIndex++;
-      (oldNodes[oldIndex] as ChildNode).remove()
-      cache.push(oldNodes.splice(oldIndex, 1)[0]);
-      // console.log("remove")
+      oldNodes.get(oldIndex).remove();
+      cache.append(oldNodes.pop(oldIndex));
     }
   }
-
-  // console.log(oldNodes)
 
   let index = 0;
 
-  oldNodes.push(end);
-
-  while (index < newNodes.length) {
-    const oldNode = index < oldNodes.length ? oldNodes[index] : null;
-    const newNode = newNodes[index]
+  while (index < newNodes.length()) {
+    const oldNode = index < oldNodes.length() ? oldNodes.get(index) : null;
+    const newNode = newNodes.get(index);
 
     if (newNode.isEqualNode(oldNode)) {
       index++;
-    } else if (includesNode(cache, newNode)) {
-      const node = cache.splice(indexOfNode(cache, newNode), 1)[0];
-      (oldNodes[index] as ChildNode).before(node);
-      oldNodes.splice(index, 0, node);
+    } else if (cache.includes(newNode)) {
+      const node = cache.pop(cache.indexOf(newNode));
+      oldNodes.insert(index, node);
     } else {
       const node = newNode.cloneNode(true);
-      (oldNodes[index] as ChildNode).before(node);
-      oldNodes.splice(index, 0, node);
+      oldNodes.insert(index, node as ChildNode);
     }
   }
-
-  // console.log(oldNodes)
 }
