@@ -13,9 +13,7 @@ const template = (rows: string[]) =>
       <button id="swap">Swap</button>
       <button id="update">Update</button>
     </div>
-    <div>
-      ${rows.join("")}
-    </div>
+    <div>${rows.join("")}</div>
   `;
 
 const add = (target: Element, rows: string[]) => {

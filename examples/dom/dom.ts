@@ -6,7 +6,10 @@ function template(value: number) {
   return html(`
     <div id="display">Value is currently: ${String(value)}</div>
     <button id="increment">Click to increment</button>
-    ${[...Array(value).keys()].reverse().map((x) => `<div>${x}</div>`).join("")}
+    ${[...Array(value).keys()]
+      .reverse()
+      .map((x) => `<div>${x}</div>`)
+      .join("")}
   `);
 }
 
