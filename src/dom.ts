@@ -47,51 +47,21 @@
 export { html, render };
 
 /**
- * Type guard for checking of a node is a text node
- *
- * @param node Node to be checked
- *
- * @returns Node is text node or not
- */
-
-function isTextNode(node: Node): node is Text {
-  return node.nodeType === Node.TEXT_NODE;
-}
-
-/**
- * Type guard for checking of a node is an element node
- *
- * @param node Node to be checked
- *
- * @returns Node is element node or not
- */
-
-function isElementNode(node: Node): node is Element {
-  return node.nodeType === Node.ELEMENT_NODE;
-}
-
-/**
- * Type guard for checking of a node is a comment node
- *
- * @param node Node to be checked
- *
- * @returns Node is comment node or not
- */
-
-function isCommentNode(node: Node): node is Comment {
-  return node.nodeType === Node.COMMENT_NODE;
-}
-
-/**
  * Generates HTML nodes as a document fragment from strings
  *
- * @param template The string to be converted into HTML nodes
+ * @param value The string to be converted into HTML nodes
  *
  * @returns The HTML nodes as a document fragment
  */
 
-function html(template: string): DocumentFragment {
-  return document.createRange().createContextualFragment(template);
+function html(value: string): DocumentFragment {
+  // create a template for parsing the html value
+  const template = document.createElement("template");
+  // parse the value through innerHTML
+  template.innerHTML = value;
+
+  // retrieve the template content as a document fragment
+  return template.content;
 }
 
 /**
@@ -103,59 +73,16 @@ function html(template: string): DocumentFragment {
 function sanitizeNode(element: Node): void {
   for (const node of element.childNodes) {
     if (
-      isCommentNode(node) ||
-      (isTextNode(node) && (node.textContent || "").trim() === "")
+      node instanceof Comment ||
+      (node instanceof Text && /^\s*$/.test(node.textContent ?? ""))
     ) {
       // remove all comment nodes or empty text nodes
-      node.remove();
-    } else if (isElementNode(node)) {
+      element.removeChild(node);
+    } else if (node instanceof Element) {
       // continue sanitizing element child nodes
       sanitizeNode(node);
     }
   }
-}
-
-/**
- * Helper function to check if two nodes are identical, checking to see if they
- * are equal, including their children
- *
- * @param node1 First node to be checked
- * @param node2 Second node to be checked
- *
- * @returns First node is identical second node or not
- */
-
-function isIdenticalNode(node1: Node, node2: Node): boolean {
-  return node1.isEqualNode(node2);
-}
-
-/**
- * Helper function to check if two nodes are the same, checking to see if they
- * are equal, excluding their children
- *
- * @param node1 First node to be checked
- * @param node2 Second node to be checked
- *
- * @returns First node is the same as the second node or not
- */
-
-function isSameNode(node1: Node, node2: Node): boolean {
-  // make shallow clones of nodes to compare, so children are removed
-  return node1.cloneNode(false).isEqualNode(node2.cloneNode(false));
-}
-
-/**
- * Helper function to check if two nodes are related, checking to see if they
- * have the same name
- *
- * @param node1 First node to be checked
- * @param node2 Second node to be checked
- *
- * @returns First node has the same name as the second node or not
- */
-
-function isRelatedNode(node1: Node, node2: Node): boolean {
-  return node1.nodeName === node2.nodeName;
 }
 
 /**
@@ -168,24 +95,20 @@ function isRelatedNode(node1: Node, node2: Node): boolean {
  *   locations in newElement
  */
 
-function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
-  const filteredNodes: number[][] = [];
+function findKeepNodes(oldElement: Node, newElement: Node): [number, number][] {
+  const filteredNodes: [number, number][] = [];
 
   for (const [newIndex, newNode] of newElement.childNodes.entries()) {
     for (const [oldIndex, oldNode] of oldElement.childNodes.entries()) {
-      if (
-        isIdenticalNode(newNode, oldNode) ||
-        isSameNode(newNode, oldNode) ||
-        isRelatedNode(newNode, oldNode)
-      ) {
+      if (newNode.nodeName === oldNode.nodeName) {
         // save indexes when the node could be kept
         filteredNodes.push([newIndex, oldIndex]);
       }
     }
   }
 
-  const keepNodes: number[][] = [];
-  let lastNode: number[] = [-1, -1];
+  const keepNodes: [number, number][] = [];
+  let lastNode: [number, number] = [-1, -1];
 
   for (const node of filteredNodes) {
     if (node[0] > lastNode[0] && node[1] > lastNode[1]) {
@@ -207,17 +130,17 @@ function findKeepNodes(oldElement: Node, newElement: Node): number[][] {
 
 function patchAttributes(oldNode: Node, newNode: Node): void {
   if (
-    isTextNode(oldNode) &&
-    isTextNode(newNode) &&
+    oldNode instanceof Text &&
+    newNode instanceof Text &&
     oldNode.nodeValue !== newNode.nodeValue
   ) {
     // update text for text nodes
     oldNode.nodeValue = newNode.nodeValue;
-  } else if (isElementNode(oldNode) && isElementNode(newNode)) {
+  } else if (oldNode instanceof Element && newNode instanceof Element) {
     for (const attribute of newNode.getAttributeNames()) {
       if (oldNode.getAttribute(attribute) !== newNode.getAttribute(attribute)) {
         // update attribute if it is different
-        oldNode.setAttribute(attribute, newNode.getAttribute(attribute) || "");
+        oldNode.setAttribute(attribute, newNode.getAttribute(attribute) ?? "");
       }
     }
 
@@ -239,17 +162,17 @@ function patchAttributes(oldNode: Node, newNode: Node): void {
  */
 
 function patchNode(oldNode: Node, newNode: Node): void {
-  const keepNodes: number[][] = findKeepNodes(oldNode, newNode);
-  const removeNodes: number[] = [...oldNode.childNodes.keys()].filter(
-    (x) => !keepNodes.map((y) => y[1]).includes(x)
-  );
-  const insertNodes: number[] = [...newNode.childNodes.keys()].filter(
-    (x) => !keepNodes.map((y) => y[0]).includes(x)
-  );
+  const keepNodes = findKeepNodes(oldNode, newNode);
+  const keepNodesOld = keepNodes.map((x) => x[1]);
+  const keepNodesNew = keepNodes.map((x) => x[0]);
+  const allOldNodes = [...oldNode.childNodes.keys()];
+  const allNewNodes = [...newNode.childNodes.keys()];
+  const removeNodes = allOldNodes.filter((x) => !keepNodesOld.includes(x));
+  const insertNodes = allNewNodes.filter((x) => !keepNodesNew.includes(x));
 
   for (const [newIndex, oldIndex] of keepNodes) {
-    const currentOld: Node = oldNode.childNodes[oldIndex];
-    const currentNew: Node = newNode.childNodes[newIndex];
+    const currentOld = oldNode.childNodes[oldIndex];
+    const currentNew = newNode.childNodes[newIndex];
 
     // patch the attributes of the old node
     patchAttributes(currentOld, currentNew);
