@@ -2,7 +2,7 @@ export { render };
 
 /* eslint-disable sort-imports */
 
-import { diffNodes } from "./diff";
+import { diff } from "./diff";
 import { RawTemplate, RawValues } from "./raw";
 import {
   TemplateAttribute,
@@ -123,7 +123,7 @@ function render(target: Element, rawTemplate: RawTemplate): void {
         throw new Error("parent node is missing for start");
       }
 
-      diffNodes(start, end, newValue);
+      diff(start, end, newValue);
     }
   }
 
