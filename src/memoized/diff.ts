@@ -49,25 +49,43 @@ function diff(start: Comment, end: Comment, value: string): void {
     return;
   }
 
-  let oldIndex = 0
-  let newIndex = 0
+  let oldIndex = 0;
+  let newIndex = 0;
+
+  let oldReverse = 0;
+  let newReverse = 0;
+
+  let removeIndex: number[] = [];
+  let removeReverse: number[] = [];
 
   const cache: Node[] = [];
 
-  for (const newNode of newNodes) {
-    if (oldIndex >= oldNodes.length) {
-      break;
-    }
-
+  while (oldIndex < oldNodes.length) {
+    const newNode = newNodes[newIndex];
     const oldNode = oldNodes[oldIndex];
 
-    if (newNode.isEqualNode(oldNode)) {
-      newIndex++;
-      oldIndex++;
-    } else {
-      newIndex++;
-      (oldNodes[oldIndex] as ChildNode).remove()
-      cache.push(oldNodes.splice(oldIndex, 1)[0]);
+    if (!newNode.isEqualNode(oldNode)) {
+      removeIndex.push(oldIndex);
+    }
+
+    newIndex++;
+    oldIndex++;
+
+    const newElement = newNodes[newNodes.length - (newReverse + 1)];
+    const oldElement = oldNodes[oldNodes.length - (oldReverse + 1)];
+
+    if (!newElement.isEqualNode(oldElement)) {
+      removeReverse.push(oldIndex);
+    }
+  }
+
+  let modifier = 0;
+
+  for (const index of removeIndex) {
+    if (removeReverse.includes(index)) {
+      (oldNodes[index - modifier] as ChildNode).remove();
+      cache.push(oldNodes.splice(index - modifier, 1)[0]);
+      modifier++;
     }
   }
 
