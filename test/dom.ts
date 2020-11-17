@@ -5,11 +5,11 @@ const assert = chai.assert;
 
 describe("dom", function () {
   describe("html", function () {
-    const documentFragment = document.createDocumentFragment();
-    documentFragment.appendChild(document.createElement("div"));
+    const template = document.createElement("template");
+    template.innerHTML = "<div></div>";
 
     it("creates elements properly", function () {
-      assert.deepEqual(html("<div></div>"), documentFragment);
+      assert.deepEqual(html("<div></div>"), template.content);
     });
 
     it("parses invalid html", function () {
