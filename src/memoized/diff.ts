@@ -2,6 +2,10 @@ export { diff };
 
 import { rawFragment } from "./raw";
 
+function isChildNode(value: Node): value is ChildNode {
+  return value.parentNode !== null;
+}
+
 function indexOf(nodes: Node[], value: Node): number {
   for (let index = 0; index < nodes.length; index++) {
     if (nodes[index].isEqualNode(value)) {
@@ -49,27 +53,84 @@ function diff(start: Comment, end: Comment, value: string): void {
     return;
   }
 
-  let oldIndex = 0
-  let newIndex = 0
+  let oldIndex = 0;
+  let newIndex = 0;
 
   const cache: Node[] = [];
+  let removeIndexes: number[] = [];
 
-  for (const newNode of newNodes) {
-    if (oldIndex >= oldNodes.length) {
-      break;
-    }
+  const length = Math.max(newNodes.length, oldNodes.length);
 
-    const oldNode = oldNodes[oldIndex];
+  for (let index = 0; index < length; index++) {
+    const oldNode = oldNodes[index];
+    const newNode = newNodes[index];
 
-    if (newNode.isEqualNode(oldNode)) {
-      newIndex++;
-      oldIndex++;
-    } else {
-      newIndex++;
-      (oldNodes[oldIndex] as ChildNode).remove()
-      cache.push(oldNodes.splice(oldIndex, 1)[0]);
+    if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
+      removeIndexes.push(index);
     }
   }
+
+  removeIndexes = removeIndexes.reverse()
+
+  const reverseRemoveIndexes: number[] = [];
+
+  for (let index = 0; index < length; index++) {
+    const oldNode = oldNodes[oldNodes.length - (index + 1)];
+    const newNode = newNodes[newNodes.length - (index + 1)];
+
+    if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
+      reverseRemoveIndexes.push(oldNodes.length - (index + 1));
+    }
+  }
+
+  // reverseRemoveIndexes.sort((x, y) => x - y);
+
+  // console.log(removeIndexes);
+  // console.log(reverseRemoveIndexes);
+
+  const indexes =
+    reverseRemoveIndexes.length < removeIndexes.length
+      ? reverseRemoveIndexes
+      : removeIndexes;
+
+  // if (reverseRemoveIndexes.length < removeIndexes.length) {
+    for (const [modifier, index] of indexes.entries()) {
+      const oldIndex = index;
+      const oldNode = oldNodes[oldIndex];
+
+      if (typeof oldNode !== "undefined" && isChildNode(oldNode)) {
+        oldNode.remove();
+        cache.push(oldNodes.splice(oldIndex, 1)[0]);
+      }
+    }
+  // } else {
+  //   for (const [modifier, index] of removeIndexes.entries()) {
+  //     const oldIndex = index - modifier;
+  //     const oldNode = oldNodes[oldIndex];
+
+  //     if (typeof oldNode !== "undefined" && isChildNode(oldNode)) {
+  //       oldNode.remove();
+  //       cache.push(oldNodes.splice(oldIndex, 1)[0]);
+  //     }
+  //   }
+  // }
+
+  // for (const newNode of newNodes) {
+  //   if (oldIndex >= oldNodes.length) {
+  //     break;
+  //   }
+
+  //   const oldNode = oldNodes[oldIndex];
+
+  //   if (newNode.isEqualNode(oldNode)) {
+  //     newIndex++;
+  //     oldIndex++;
+  //   } else {
+  //     newIndex++;
+  //     (oldNodes[oldIndex] as ChildNode).remove()
+  //     cache.push(oldNodes.splice(oldIndex, 1)[0]);
+  //   }
+  // }
 
   let index = 0;
 
@@ -77,7 +138,7 @@ function diff(start: Comment, end: Comment, value: string): void {
 
   while (index < newNodes.length) {
     const oldNode = index < oldNodes.length ? oldNodes[index] : null;
-    const newNode = newNodes[index]
+    const newNode = newNodes[index];
 
     if (newNode.isEqualNode(oldNode)) {
       index++;
