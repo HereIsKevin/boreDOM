@@ -77,26 +77,32 @@ function diff(start: Comment, end: Comment, value: string): void {
   // find maximum length out of new and old nodes
   const length = Math.max(newNodes.length, oldNodes.length);
 
+  let offset = 0;
+
   // execute stupid diff algorithm from front to back
   for (let index = 0; index < length; index++) {
     const oldNode = oldNodes[index];
-    const newNode = newNodes[index];
+    const newNode = newNodes[index - offset];
 
     // keep indexes of differing nodes to remove
     if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
       forwardIndexes.push(index);
+      offset++;
     }
   }
+
+  offset = 0;
 
   // execute stupid diff algorith from back to front
   for (let index = 0; index < length; index++) {
     const modifier = index + 1;
     const oldNode = oldNodes[oldNodes.length - modifier];
-    const newNode = newNodes[newNodes.length - modifier];
+    const newNode = newNodes[newNodes.length - modifier + offset];
 
     // keep indexes of differing nodes to remove
     if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
       backwardIndexes.push(oldNodes.length - modifier);
+      offset++;
     }
   }
 
