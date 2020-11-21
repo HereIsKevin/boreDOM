@@ -134,7 +134,7 @@ function diff(start: Comment, end: Comment, value: string): void {
       ? cache.splice(indexOf(cache, newNode), 1)[0]
       : newNode.cloneNode(true);
 
-    if (isChildNode(oldNode)) {
+    if (typeof oldNode !== "undefined" && isChildNode(oldNode)) {
       // insert at the old node is possible
       oldNode.before(node);
     } else {
