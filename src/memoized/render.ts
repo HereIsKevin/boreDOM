@@ -1,7 +1,5 @@
 export { render };
 
-/* eslint-disable sort-imports */
-
 import { diff } from "./diff";
 import { RawTemplate, RawValues } from "./raw";
 import {
@@ -10,8 +8,6 @@ import {
   TemplateText,
   template,
 } from "./template";
-
-/* eslint-enable sort-imports */
 
 interface Cache {
   values: RawValues;
@@ -91,38 +87,19 @@ function render(target: Element, rawTemplate: RawTemplate): void {
     }
 
     if (index in cache.attributes) {
-      // extract element nad name of attribute from cache
+      // extract element and name of attribute from cache
       const { element, name } = cache.attributes[index];
-
-      // make sure the new value is not an array
-      if (Array.isArray(newValue)) {
-        throw new TypeError("attribute value cannot be an array");
-      }
-
       // update the attribute
       element.setAttribute(name, newValue);
     } else if (index in cache.texts) {
       // extract the text node from the cache
       const { text } = cache.texts[index];
-
-      // make sure the new value is not an array
-      if (Array.isArray(newValue)) {
-        throw new TypeError("text value cannot be an array");
-      }
-
       // update the text node value
       text.nodeValue = newValue;
     } else if (index in cache.elements) {
       // extract the start and end comments from the cache
       const { start, end } = cache.elements[index];
-      // find the parent node of the nodes
-      const parent = start.parentNode;
-
-      // make sure there is a parent
-      if (parent === null) {
-        throw new Error("parent node is missing for start");
-      }
-
+      // diff and update the old and new values
       diff(start, end, newValue);
     }
   }
