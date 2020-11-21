@@ -100,19 +100,36 @@ function diff(start: Comment, end: Comment, value: string): void {
     }
   }
 
-  // take backward indexes only if they are shorter than forward indexes
-  const indexes =
-    backwardIndexes.length < forwardIndexes.length
-      ? backwardIndexes
-      : forwardIndexes.reverse();
+  if (backwardIndexes.length < forwardIndexes.length) {
+    for (const index of backwardIndexes) {
+      const node = oldNodes[index];
 
-  for (const index of indexes) {
-    const node = oldNodes[index];
+      // remove and cache node if can be found and is a child node
+      if (
+        typeof node !== "undefined" &&
+        isChildNode(node) &&
+        !node.isEqualNode(newNodes[index])
+      ) {
+        node.remove();
+        cache.push(oldNodes.splice(index, 1)[0]);
+      }
+    }
+  } else {
+    let modifier = 0;
 
-    // remove and cache node if can be found and is a child node
-    if (typeof node !== "undefined" && isChildNode(node)) {
-      node.remove();
-      cache.push(oldNodes.splice(index, 1)[0]);
+    for (const index of forwardIndexes) {
+      const position = index - modifier;
+      const node = oldNodes[position];
+
+      if (
+        typeof node !== "undefined" &&
+        isChildNode(node) &&
+        !node.isEqualNode(newNodes[position])
+      ) {
+        node.remove();
+        cache.push(oldNodes.splice(position, 1)[0]);
+        modifier++;
+      }
     }
   }
 
