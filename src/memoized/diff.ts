@@ -68,9 +68,6 @@ function diff(start: Comment, end: Comment, value: string): void {
     return;
   }
 
-  let oldIndex = 0;
-  let newIndex = 0;
-
   // cache any nodes that are removed
   const cache: Node[] = [];
   // keep remove indexes while diffing from front to back

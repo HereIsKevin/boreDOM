@@ -1,6 +1,5 @@
 export { render };
 
-import { diff } from "./diff";
 import { RawTemplate, RawValues } from "./raw";
 import {
   TemplateAttribute,
@@ -8,6 +7,7 @@ import {
   TemplateText,
   template,
 } from "./template";
+import { diff } from "./diff";
 
 interface Cache {
   values: RawValues;
