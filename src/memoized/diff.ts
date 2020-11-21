@@ -101,33 +101,41 @@ function diff(start: Comment, end: Comment, value: string): void {
   }
 
   if (backwardIndexes.length < forwardIndexes.length) {
+    // iterate through back to front indexes only if they are shorter
     for (const index of backwardIndexes) {
       const node = oldNodes[index];
 
-      // remove and cache node if can be found and is a child node
+      // when the node to be removed can be found and is not a diffing mistake
       if (
         typeof node !== "undefined" &&
         isChildNode(node) &&
         !node.isEqualNode(newNodes[index])
       ) {
+        // remove the node
         node.remove();
+        // cache it for later
         cache.push(oldNodes.splice(index, 1)[0]);
       }
     }
   } else {
+    // use regular indexes otherwise, keeping a modifier for removals
     let modifier = 0;
 
     for (const index of forwardIndexes) {
       const position = index - modifier;
       const node = oldNodes[position];
 
+      // when the node to be removed can be found and is not a diffing mistake
       if (
         typeof node !== "undefined" &&
         isChildNode(node) &&
         !node.isEqualNode(newNodes[position])
       ) {
+        // remove the node
         node.remove();
+        // cache it for later
         cache.push(oldNodes.splice(position, 1)[0]);
+        // increment the modifier
         modifier++;
       }
     }
