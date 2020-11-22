@@ -73,7 +73,7 @@ function diff(start: Comment, end: Comment, value: string): void {
   // keep remove indexes while diffing from front to back
   const forwardIndexes: number[] = [];
   // keep remove indexes while diffing from back to front
-  const backwardIndexes: number[] = [];
+  // const backwardIndexes: number[] = [];
   // find maximum length out of new and old nodes
   const length = Math.max(newNodes.length, oldNodes.length);
 
@@ -88,58 +88,58 @@ function diff(start: Comment, end: Comment, value: string): void {
     }
   }
 
-  // execute stupid diff algorith from back to front
-  for (let index = 0; index < length; index++) {
-    const modifier = index + 1;
-    const oldNode = oldNodes[oldNodes.length - modifier];
-    const newNode = newNodes[newNodes.length - modifier];
+  // // execute stupid diff algorith from back to front
+  // for (let index = 0; index < length; index++) {
+  //   const modifier = index + 1;
+  //   const oldNode = oldNodes[oldNodes.length - modifier];
+  //   const newNode = newNodes[newNodes.length - modifier];
 
-    // keep indexes of differing nodes to remove
-    if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
-      backwardIndexes.push(oldNodes.length - modifier);
+  //   // keep indexes of differing nodes to remove
+  //   if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
+  //     backwardIndexes.push(oldNodes.length - modifier);
+  //   }
+  // }
+
+  // if (backwardIndexes.length < forwardIndexes.length) {
+  //   // iterate through back to front indexes only if they are shorter
+  //   for (const index of backwardIndexes) {
+  //     const node = oldNodes[index];
+
+  //     // when the node to be removed can be found and is not a diffing mistake
+  //     if (
+  //       typeof node !== "undefined" &&
+  //       isChildNode(node) &&
+  //       !node.isEqualNode(newNodes[index])
+  //     ) {
+  //       // remove the node
+  //       node.remove();
+  //       // cache it for later
+  //       cache.push(oldNodes.splice(index, 1)[0]);
+  //     }
+  //   }
+  // } else {
+  // use regular indexes otherwise, keeping a modifier for removals
+  let modifier = 0;
+
+  for (const index of forwardIndexes) {
+    const position = index - modifier;
+    const node = oldNodes[position];
+
+    // when the node to be removed can be found and is not a diffing mistake
+    if (
+      typeof node !== "undefined" &&
+      isChildNode(node) &&
+      !node.isEqualNode(newNodes[position])
+    ) {
+      // remove the node
+      node.remove();
+      // cache it for later
+      cache.push(oldNodes.splice(position, 1)[0]);
+      // increment the modifier
+      modifier++;
     }
   }
-
-  if (backwardIndexes.length < forwardIndexes.length) {
-    // iterate through back to front indexes only if they are shorter
-    for (const index of backwardIndexes) {
-      const node = oldNodes[index];
-
-      // when the node to be removed can be found and is not a diffing mistake
-      if (
-        typeof node !== "undefined" &&
-        isChildNode(node) &&
-        !node.isEqualNode(newNodes[index])
-      ) {
-        // remove the node
-        node.remove();
-        // cache it for later
-        cache.push(oldNodes.splice(index, 1)[0]);
-      }
-    }
-  } else {
-    // use regular indexes otherwise, keeping a modifier for removals
-    let modifier = 0;
-
-    for (const index of forwardIndexes) {
-      const position = index - modifier;
-      const node = oldNodes[position];
-
-      // when the node to be removed can be found and is not a diffing mistake
-      if (
-        typeof node !== "undefined" &&
-        isChildNode(node) &&
-        !node.isEqualNode(newNodes[position])
-      ) {
-        // remove the node
-        node.remove();
-        // cache it for later
-        cache.push(oldNodes.splice(position, 1)[0]);
-        // increment the modifier
-        modifier++;
-      }
-    }
-  }
+  // }
 
   let index = 0;
 
