@@ -116,4 +116,4 @@ docs/
 examples/**/*.js
 
 # TypeScript output for tests
-test/*.js
+tests/*.js
