@@ -6,10 +6,7 @@ function template(value: number) {
   return html(`
     <div id="display">Value is currently: ${String(value)}</div>
     <button id="increment">Click to increment</button>
-    ${[...Array(value).keys()]
-      .reverse()
-      .map((x) => `<div>${x}</div>`)
-      .join("")}
+    ${[...Array(value).keys()].map((x) => `<div>${x}</div>`).join("")}
   `);
 }
 
@@ -19,7 +16,7 @@ function update(node: Element, value: number) {
   console.timeEnd("render");
 }
 
-let value = 1000;
+let value = 0;
 
 const target = document.getElementById("app");
 
