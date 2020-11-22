@@ -70,58 +70,13 @@ function diff(start: Comment, end: Comment, value: string): void {
 
   // cache any nodes that are removed
   const cache: Node[] = [];
-  // keep remove indexes while diffing from front to back
-  const forwardIndexes: number[] = [];
-  // keep remove indexes while diffing from back to front
-  // const backwardIndexes: number[] = [];
   // find maximum length out of new and old nodes
   const length = Math.max(newNodes.length, oldNodes.length);
 
-  // execute stupid diff algorithm from front to back
-  for (let index = 0; index < length; index++) {
-    const oldNode = oldNodes[index];
-    const newNode = newNodes[index];
-
-    // keep indexes of differing nodes to remove
-    if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
-      forwardIndexes.push(index);
-    }
-  }
-
-  // // execute stupid diff algorith from back to front
-  // for (let index = 0; index < length; index++) {
-  //   const modifier = index + 1;
-  //   const oldNode = oldNodes[oldNodes.length - modifier];
-  //   const newNode = newNodes[newNodes.length - modifier];
-
-  //   // keep indexes of differing nodes to remove
-  //   if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
-  //     backwardIndexes.push(oldNodes.length - modifier);
-  //   }
-  // }
-
-  // if (backwardIndexes.length < forwardIndexes.length) {
-  //   // iterate through back to front indexes only if they are shorter
-  //   for (const index of backwardIndexes) {
-  //     const node = oldNodes[index];
-
-  //     // when the node to be removed can be found and is not a diffing mistake
-  //     if (
-  //       typeof node !== "undefined" &&
-  //       isChildNode(node) &&
-  //       !node.isEqualNode(newNodes[index])
-  //     ) {
-  //       // remove the node
-  //       node.remove();
-  //       // cache it for later
-  //       cache.push(oldNodes.splice(index, 1)[0]);
-  //     }
-  //   }
-  // } else {
-  // use regular indexes otherwise, keeping a modifier for removals
+  // keep a modifier for removals
   let modifier = 0;
 
-  for (const index of forwardIndexes) {
+  for (let index = 0; index < length; index++) {
     const position = index - modifier;
     const node = oldNodes[position];
 
@@ -129,7 +84,8 @@ function diff(start: Comment, end: Comment, value: string): void {
     if (
       typeof node !== "undefined" &&
       isChildNode(node) &&
-      !node.isEqualNode(newNodes[position])
+      !node.isEqualNode(newNodes[position]) &&
+      !node.isEqualNode(newNodes[index])
     ) {
       // remove the node
       node.remove();
@@ -139,7 +95,6 @@ function diff(start: Comment, end: Comment, value: string): void {
       modifier++;
     }
   }
-  // }
 
   let index = 0;
 
@@ -169,5 +124,21 @@ function diff(start: Comment, end: Comment, value: string): void {
 
     // insert node into old nodes for reference
     oldNodes.splice(index, 0, node);
+  }
+
+  console.log(newNodes, oldNodes);
+
+  if (newNodes.length !== oldNodes.length) {
+    console.log("new nodes are not the same length as old nodes");
+  }
+
+  for (let index = 0; index < newNodes.length; index++) {
+    const newNode = newNodes[index];
+    const oldNode = oldNodes[index];
+
+    if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
+      console.log(`new nodes are different from old nodes at ${index}`);
+      console.log(newNode, oldNode);
+    }
   }
 }
