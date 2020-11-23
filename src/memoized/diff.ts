@@ -47,6 +47,33 @@ function diff(start: Comment, end: Comment, value: string): void {
   // generate list of nodes from the value
   const newNodes = rawFragment(value).childNodes;
 
+  for (let index = 0; index < oldNodes.length; index++) {
+    const node = oldNodes[index];
+
+    if (
+      node instanceof Comment ||
+      (node instanceof Text && /^\s*$/.test(node.textContent ?? ""))
+    ) {
+      node.remove();
+      oldNodes.splice(index, 0);
+      index--;
+      continue;
+    }
+  }
+
+  for (let index = 0; index < newNodes.length; index++) {
+    const node = newNodes[index];
+
+    if (
+      node instanceof Comment ||
+      (node instanceof Text && /^\s*$/.test(node.textContent ?? ""))
+    ) {
+      node.remove();
+      index--;
+      continue;
+    }
+  }
+
   if (oldNodes.length === 0) {
     // insert nodes after start if there were none before
     start.after(...newNodes);
@@ -126,19 +153,19 @@ function diff(start: Comment, end: Comment, value: string): void {
     oldNodes.splice(index, 0, node);
   }
 
-  console.log(newNodes, oldNodes);
+  // console.log(newNodes, oldNodes);
 
-  if (newNodes.length !== oldNodes.length) {
-    console.log("new nodes are not the same length as old nodes");
-  }
+  // if (newNodes.length !== oldNodes.length) {
+  //   console.log("new nodes are not the same length as old nodes");
+  // }
 
-  for (let index = 0; index < newNodes.length; index++) {
-    const newNode = newNodes[index];
-    const oldNode = oldNodes[index];
+  // for (let index = 0; index < newNodes.length; index++) {
+  //   const newNode = newNodes[index];
+  //   const oldNode = oldNodes[index];
 
-    if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
-      console.log(`new nodes are different from old nodes at ${index}`);
-      console.log(newNode, oldNode);
-    }
-  }
+  //   if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
+  //     console.log(`new nodes are different from old nodes at ${index}`);
+  //     console.log(newNode, oldNode);
+  //   }
+  // }
 }
