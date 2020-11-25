@@ -7,7 +7,7 @@ import {
   TemplateText,
   template,
 } from "./template";
-import { diff } from "./diff";
+import { compare, diff } from "./diff";
 
 interface Cache {
   values: RawValues;
@@ -89,18 +89,37 @@ function render(target: Element, rawTemplate: RawTemplate): void {
     if (index in cache.attributes) {
       // extract element and name of attribute from cache
       const { element, name } = cache.attributes[index];
+
+      // make sure the new value is not an array
+      if (Array.isArray(newValue)) {
+        throw new TypeError("attribute value cannot be an array");
+      }
+
       // update the attribute
       element.setAttribute(name, newValue);
     } else if (index in cache.texts) {
       // extract the text node from the cache
       const { text } = cache.texts[index];
+
+      // make sure the new value is not an array
+      if (Array.isArray(newValue)) {
+        throw new TypeError("text value cannot be an array");
+      }
+
       // update the text node value
       text.nodeValue = newValue;
     } else if (index in cache.elements) {
       // extract the start and end comments from the cache
       const { start, end } = cache.elements[index];
-      // diff and update the old and new values
-      diff(start, end, newValue);
+
+      if (Array.isArray(newValue) && Array.isArray(oldValue)) {
+        compare(start, end, oldValue, newValue);
+      } else if (typeof newValue === "string" && typeof oldValue === "string") {
+        // diff and update the old and new values
+        diff(start, end, newValue);
+      } else {
+        throw new TypeError("element value must stay consistent");
+      }
     }
   }
 
