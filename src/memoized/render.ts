@@ -118,7 +118,7 @@ function render(target: Element, rawTemplate: RawTemplate): void {
         // diff and update the old and new values
         diff(start, end, newValue);
       } else {
-        throw new TypeError("element value must stay consistent");
+        throw new TypeError("element value must have consistent types");
       }
     }
   }

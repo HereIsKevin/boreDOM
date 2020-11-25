@@ -41,38 +41,41 @@ function collect(start: Comment, end: Comment): Node[] {
   return nodes;
 }
 
+function sanitize(nodes: ArrayLike<Node>): void {
+  let index = 0;
+
+  while (index < nodes.length) {
+    const node = nodes[index];
+
+    // remove comments or empty text nodes
+    if (
+      node instanceof Comment ||
+      (node instanceof Text && /^\s*$/.test(node.textContent ?? ""))
+    ) {
+      node.remove();
+
+      // splice it from nodes if nodes is an array
+      if (Array.isArray(nodes)) {
+        nodes.splice(index, 1);
+      }
+
+      continue;
+    }
+
+    index++;
+  }
+}
+
 function diff(start: Comment, end: Comment, value: string): void {
   // collect all nodes between the start and end
   const oldNodes = collect(start, end);
   // generate list of nodes from the value
   const newNodes = rawFragment(value).childNodes;
 
-  for (let index = 0; index < oldNodes.length; index++) {
-    const node = oldNodes[index];
-
-    if (
-      node instanceof Comment ||
-      (node instanceof Text && /^\s*$/.test(node.textContent ?? ""))
-    ) {
-      node.remove();
-      oldNodes.splice(index, 0);
-      index--;
-      continue;
-    }
-  }
-
-  for (let index = 0; index < newNodes.length; index++) {
-    const node = newNodes[index];
-
-    if (
-      node instanceof Comment ||
-      (node instanceof Text && /^\s*$/.test(node.textContent ?? ""))
-    ) {
-      node.remove();
-      index--;
-      continue;
-    }
-  }
+  // sanitize the old nodes
+  sanitize(oldNodes);
+  // sanitize the new nodes
+  sanitize(newNodes);
 
   if (oldNodes.length === 0) {
     // insert nodes after start if there were none before
@@ -152,124 +155,7 @@ function diff(start: Comment, end: Comment, value: string): void {
     // insert node into old nodes for reference
     oldNodes.splice(index, 0, node);
   }
-
-  // console.log(newNodes, oldNodes);
-
-  // if (newNodes.length !== oldNodes.length) {
-  //   console.log("new nodes are not the same length as old nodes");
-  // }
-
-  // for (let index = 0; index < newNodes.length; index++) {
-  //   const newNode = newNodes[index];
-  //   const oldNode = oldNodes[index];
-
-  //   if (typeof newNode === "undefined" || !newNode.isEqualNode(oldNode)) {
-  //     console.log(`new nodes are different from old nodes at ${index}`);
-  //     console.log(newNode, oldNode);
-  //   }
-  // }
 }
-
-/*function compare(
-  start: Comment,
-  end: Comment,
-  oldN: string[],
-  newN: string[]
-): void {
-  const oldValues = Array.from(oldN);
-  const newValues = Array.from(newN);
-
-  const nodes = collect(start, end);
-  const values: Node[][] = [];
-  let position = -1;
-
-  for (const node of nodes) {
-    const value = node.nodeValue ?? "";
-
-    if (node instanceof Comment && value === "separator") {
-      position++;
-    }
-
-    if (typeof values[position] === "undefined") {
-      values[position] = [];
-    }
-
-    values[position].push(node);
-  }
-
-  if (oldValues.length === 0) {
-    const value = mark(newValues);
-    const nodes = rawFragment(value).childNodes;
-    start.after(...nodes);
-    return;
-  }
-
-  if (newValues.length === 0) {
-    let next = start.nextSibling;
-
-    while (next !== null && next !== end) {
-      next.remove();
-      next = start.nextSibling;
-    }
-
-    return;
-  }
-
-  const cache: Record<string, Node[]> = {};
-  const length = Math.max(newValues.length, oldValues.length);
-  let modifier = 0;
-
-  for (let index = 0; index < length; index++) {
-    const position = index - modifier;
-    const value = oldValues[position];
-
-    if (typeof value !== "undefined" && value !== newValues[position] && value !== newValues[index]) {
-      for (const node of values[position]) {
-        node.remove();
-      }
-
-      cache[value] = values[position];
-      modifier++;
-    }
-  }
-
-  let index = 0;
-
-  while (index < newValues.length) {
-    const oldValue = oldValues[index];
-    const newValue = newValues[index];
-
-    if (newValue === oldValue) {
-      index++;
-      continue;
-    }
-
-    const cached = cache[newValue];
-    let node: Node[];
-
-    if (typeof cached === "undefined") {
-      node = cached;
-      delete cache[newValue];
-    } else {
-      node = rawFragment(`<!--separator-->${newValue}`).childNodes;
-    }
-
-    const blah = values[index];
-
-    if (typeof oldValue !== "undefined" && isChildNode(blah[0])) {
-      for (const asdf of node) {
-        blah[0].before(asdf);
-      }
-    } else {
-      end.before(...node);
-    }
-
-    oldValues.splice(index, 0, newValue);
-    values.splice(index, 0, node);
-  }
-}
-
-*/
 
 function mark(values: string[]): string {
   let output = "";
@@ -289,12 +175,16 @@ function group(start: Comment, end: Comment): Node[][] {
 
   let current = start.nextSibling;
 
+  // iterate until the end or until there are no nodes left
   while (current !== end && current !== null) {
+    // create a new group when a separator is found
     if (current instanceof Comment && current.nodeValue === "separator") {
       nodes.push([]);
     }
 
+    // append the current node to the newest group
     nodes[nodes.length - 1].push(current);
+    // move on to the next sibling
     current = current.nextSibling;
   }
 
@@ -302,7 +192,9 @@ function group(start: Comment, end: Comment): Node[][] {
 }
 
 function clear(nodes: Node[]): void {
+  // iterate through all the nodes
   for (const node of nodes) {
+    // remove the node if it is a child node, throw an error otherwise
     if (isChildNode(node)) {
       node.remove();
     } else {
@@ -314,10 +206,12 @@ function clear(nodes: Node[]): void {
 function insert(reference: Node[], nodes: Node[]): void {
   const point = reference[0];
 
+  // throw an error if the reference point is not a child node
   if (!isChildNode(point)) {
     throw new TypeError("reference point must be a child node");
   }
 
+  // insert the nodes before the reference point
   point.before(...nodes);
 }
 
@@ -327,13 +221,16 @@ function compare(
   [...oldValues]: string[],
   newValues: string[]
 ): void {
+  // group all the actual nodes
   const nodes = group(start, end);
 
+  // insert new values in when old values are empty
   if (oldValues.length === 0) {
     start.after(...rawFragment(mark(newValues)).childNodes);
     return;
   }
 
+  // remove all nodes when new values are empty
   if (newValues.length === 0) {
     let next = start.nextSibling;
 
@@ -345,40 +242,44 @@ function compare(
     return;
   }
 
+  // cache nodes that are removed for possible reinsertion
   const cache: Record<string, Node[]> = {};
+  // find maximum length out of new and old values
   const length = Math.max(newValues.length, oldValues.length);
 
+  // keep a modifier for removals
   let modifier = 0;
 
   for (let index = 0; index < length; index++) {
     const position = index - modifier;
     const value = oldValues[position];
 
-    // console.log(value, newValues[position], newValues[index])
-
+    // when the value to be removed can be found and is not a diffing mistake
     if (
       typeof value !== "undefined" &&
       value !== newValues[position] &&
       value !== newValues[index]
     ) {
-      // console.log("remove", position, index);
-    // console.log(value, newValues[position], newValues[index])
-
+      // remove the value from old values
       oldValues.splice(position, 1);
-
+      // clear the corresponding node
       clear(nodes[position]);
+      // cache nodes for later
       cache[value] = nodes.splice(position, 1)[0];
+      // increment hte modifier
       modifier++;
     }
   }
 
   let index = 0;
 
+  // iterate until at the end of new values where old values are equal
   while (index < newValues.length) {
     const oldValue = oldValues[index];
     const newValue = newValues[index];
 
     if (newValue === oldValue) {
+      // proceed on to next value when both values are equal
       index++;
       continue;
     }
@@ -386,9 +287,11 @@ function compare(
     let node: Node[];
 
     if (typeof cache[newValue] !== "undefined") {
+      // retrieve old node from cache
       node = cache[newValue];
       delete cache[newValue];
     } else {
+      // create it otherwise
       const fragment = rawFragment(`<!--separator-->${newValue}`);
       node = [...fragment.childNodes];
     }
@@ -398,12 +301,16 @@ function compare(
       typeof nodes[index] !== "undefined" &&
       isChildNode(nodes[index][0])
     ) {
+      // insert at the old node is possible
       insert(nodes[index], node);
     } else {
+      // insert at the end otherwise
       end.before(...node);
     }
 
+    // insert node into nodes for reference
     nodes.splice(index, 0, node);
+    // insert value into old values for reference
     oldValues.splice(index, 0, newValue);
   }
 }
