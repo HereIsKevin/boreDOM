@@ -1,4 +1,4 @@
-export { diff };
+export { compare, diff };
 
 import { rawFragment } from "./raw";
 
@@ -168,4 +168,242 @@ function diff(start: Comment, end: Comment, value: string): void {
   //     console.log(newNode, oldNode);
   //   }
   // }
+}
+
+/*function compare(
+  start: Comment,
+  end: Comment,
+  oldN: string[],
+  newN: string[]
+): void {
+  const oldValues = Array.from(oldN);
+  const newValues = Array.from(newN);
+
+  const nodes = collect(start, end);
+  const values: Node[][] = [];
+  let position = -1;
+
+  for (const node of nodes) {
+    const value = node.nodeValue ?? "";
+
+    if (node instanceof Comment && value === "separator") {
+      position++;
+    }
+
+    if (typeof values[position] === "undefined") {
+      values[position] = [];
+    }
+
+    values[position].push(node);
+  }
+
+  if (oldValues.length === 0) {
+    const value = mark(newValues);
+    const nodes = rawFragment(value).childNodes;
+    start.after(...nodes);
+    return;
+  }
+
+  if (newValues.length === 0) {
+    let next = start.nextSibling;
+
+    while (next !== null && next !== end) {
+      next.remove();
+      next = start.nextSibling;
+    }
+
+    return;
+  }
+
+  const cache: Record<string, Node[]> = {};
+  const length = Math.max(newValues.length, oldValues.length);
+  let modifier = 0;
+
+  for (let index = 0; index < length; index++) {
+    const position = index - modifier;
+    const value = oldValues[position];
+
+    if (typeof value !== "undefined" && value !== newValues[position] && value !== newValues[index]) {
+      for (const node of values[position]) {
+        node.remove();
+      }
+
+      cache[value] = values[position];
+      modifier++;
+    }
+  }
+
+  let index = 0;
+
+  while (index < newValues.length) {
+    const oldValue = oldValues[index];
+    const newValue = newValues[index];
+
+    if (newValue === oldValue) {
+      index++;
+      continue;
+    }
+
+    const cached = cache[newValue];
+    let node: Node[];
+
+    if (typeof cached === "undefined") {
+      node = cached;
+      delete cache[newValue];
+    } else {
+      node = rawFragment(`<!--separator-->${newValue}`).childNodes;
+    }
+
+    const blah = values[index];
+
+    if (typeof oldValue !== "undefined" && isChildNode(blah[0])) {
+      for (const asdf of node) {
+        blah[0].before(asdf);
+      }
+    } else {
+      end.before(...node);
+    }
+
+    oldValues.splice(index, 0, newValue);
+    values.splice(index, 0, node);
+  }
+}
+
+*/
+
+function mark(values: string[]): string {
+  let output = "";
+
+  // iterate through values
+  for (const value of values) {
+    // add a separator before each value
+    output += "<!--separator-->";
+    output += value;
+  }
+
+  return output;
+}
+
+function group(start: Comment, end: Comment): Node[][] {
+  const nodes: Node[][] = [];
+
+  let current = start.nextSibling;
+
+  while (current !== end && current !== null) {
+    if (current instanceof Comment && current.nodeValue === "separator") {
+      nodes.push([]);
+    }
+
+    nodes[nodes.length - 1].push(current);
+    current = current.nextSibling;
+  }
+
+  return nodes;
+}
+
+function clear(nodes: Node[]): void {
+  for (const node of nodes) {
+    if (isChildNode(node)) {
+      node.remove();
+    } else {
+      throw new TypeError("node must be a child node");
+    }
+  }
+}
+
+function insert(reference: Node[], nodes: Node[]): void {
+  const point = reference[0];
+
+  if (!isChildNode(point)) {
+    throw new TypeError("reference point must be a child node");
+  }
+
+  point.before(...nodes);
+}
+
+function compare(
+  start: Comment,
+  end: Comment,
+  [...oldValues]: string[],
+  newValues: string[]
+): void {
+  const nodes = group(start, end);
+
+  if (oldValues.length === 0) {
+    start.after(...rawFragment(mark(newValues)).childNodes);
+    return;
+  }
+
+  if (newValues.length === 0) {
+    let next = start.nextSibling;
+
+    while (next !== null && next !== end) {
+      next.remove();
+      next = start.nextSibling;
+    }
+
+    return;
+  }
+
+  const cache: Record<string, Node[]> = {};
+  const length = Math.max(newValues.length, oldValues.length);
+
+  let modifier = 0;
+
+  for (let index = 0; index < length; index++) {
+    const position = index - modifier;
+    const value = oldValues[position];
+
+    // console.log(value, newValues[position], newValues[index])
+
+    if (
+      typeof value !== "undefined" &&
+      value !== newValues[position] &&
+      value !== newValues[index]
+    ) {
+      // console.log("remove", position, index);
+    // console.log(value, newValues[position], newValues[index])
+
+      oldValues.splice(position, 1);
+
+      clear(nodes[position]);
+      cache[value] = nodes.splice(position, 1)[0];
+      modifier++;
+    }
+  }
+
+  let index = 0;
+
+  while (index < newValues.length) {
+    const oldValue = oldValues[index];
+    const newValue = newValues[index];
+
+    if (newValue === oldValue) {
+      index++;
+      continue;
+    }
+
+    let node: Node[];
+
+    if (typeof cache[newValue] !== "undefined") {
+      node = cache[newValue];
+      delete cache[newValue];
+    } else {
+      const fragment = rawFragment(`<!--separator-->${newValue}`);
+      node = [...fragment.childNodes];
+    }
+
+    if (
+      typeof oldValue !== "undefined" &&
+      typeof nodes[index] !== "undefined" &&
+      isChildNode(nodes[index][0])
+    ) {
+      insert(nodes[index], node);
+    } else {
+      end.before(...node);
+    }
+
+    nodes.splice(index, 0, node);
+    oldValues.splice(index, 0, newValue);
+  }
 }
