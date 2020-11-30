@@ -229,11 +229,17 @@ function patch([...oldValues], newValues) {
   const remove = allOld.filter((x) => !keepOld.includes(x));
   const insert = allNew.filter((x) => !keepNew.includes(x));
 
+  for (const [oldIndex, newIndex] of keep) {
+    console.log("keep", oldIndex, newIndex, oldValues[oldIndex]);
+  }
+
   for (const [modifier, index] of remove.entries()) {
+    console.log("remove", index, oldValues[index - modifier]);
     oldValues.splice(index - modifier, 1);
   }
 
   for (const index of insert) {
+    console.log("insert", index, newValues[index]);
     oldValues.splice(index, 0, newValues[index]);
   }
 
