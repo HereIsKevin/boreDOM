@@ -1,0 +1,43 @@
+if length of old values is equal to 0
+    insert all new values
+    return
+
+if length of new values is equal to 0
+    remove all old values
+    return
+
+set cache to list
+set length to max of length of new values and length of old values
+set modifier to 0
+
+for index in range of 0 to length
+    set position to index minus modifier
+    set value to value in old values at position
+
+    if conditions
+        value is not equal to undefined and
+        value is not equal to value in new values at position and
+        value is not equal to value in new values at index
+    are equal to true
+        pop value from old values and append it to cache
+        increment modifier by 1
+
+set index to 0
+
+while index is less than length of new values
+    set old value to value in old values at index
+    set new value to value in new values at index
+
+    if new value is equal to old value
+        increment index by 1
+        continue
+
+    if old value in cache
+        set value to old value in cache
+    else
+        set value to clone of new value
+
+    if old value is not equal to undefined
+        insert value before old value
+    else
+        append value to old values
