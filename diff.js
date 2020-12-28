@@ -57,8 +57,11 @@ function diff([...oldValues], newValues) {
   return oldValues;
 }
 
-const oldValues = "ABCABBA".split("");
-const newValues = "CBABAC".split("");
+// const oldValues = "ABCABBA".split("");
+// const newValues = "CBABAC".split("");
+
+const oldValues = "1234567890".split("");
+const newValues = "1239567840".split("");
 
 // diff(oldValues, newValues);
 
@@ -120,7 +123,7 @@ function compare(oldValues, newValues) {
   let startNew = 0;
   let startSum = Infinity;
 
-  while (startOld + oldMin < oldMax && startOld <= startSum) {
+  while (startOld + oldMin < oldMax && startNew + newMin < newMax && startOld <= startSum) {
     const oldValue = oldValues[startOld + oldMin];
     const newValue = newValues[startNew + newMin];
     const sum = startOld + startNew;
@@ -150,7 +153,7 @@ function compare(oldValues, newValues) {
   let endNew = 0;
   let endSum = Infinity;
 
-  while (oldMax - endOld > oldMin && endOld <= endSum) {
+  while (oldMax - endOld > oldMin && newMax - endNew > newMin && endOld <= endSum) {
     const oldValue = oldValues[oldMax - endOld];
     const newValue = newValues[newMax - endNew];
     const sum = endOld + endNew;
