@@ -2,6 +2,13 @@ export { compare, diff };
 
 import { rawFragment } from "./raw";
 
+declare global {
+  interface Window {
+    collections?: WeakMap<Comment, Node[]>;
+    groups?: WeakMap<Comment, Node[][]>;
+  }
+}
+
 function isChildNode(value: Node): value is ChildNode {
   // node is only a child node if it has a parent node
   return value.parentNode !== null;
@@ -67,8 +74,13 @@ function sanitize(nodes: ArrayLike<Node>): void {
 }
 
 function diff(start: Comment, end: Comment, value: string): void {
-  // collect all nodes between the start and end
-  const oldNodes = collect(start, end);
+  // initialize cache if missing, using WeakMap to prevent memory leaks
+  if (typeof window.collections === "undefined") {
+    window.collections = new WeakMap();
+  }
+
+  // attempt to get collections from cache, collect all nodes otherwise
+  const oldNodes = window.collections.get(start) ?? collect(start, end);
   // generate list of nodes from the value
   const newNodes = rawFragment(value).childNodes;
 
@@ -155,6 +167,9 @@ function diff(start: Comment, end: Comment, value: string): void {
     // insert node into old nodes for reference
     oldNodes.splice(index, 0, node);
   }
+
+  // update the cache in the WeakMap
+  window.collections.set(start, oldNodes);
 }
 
 function mark(values: string[]): string {
@@ -221,8 +236,13 @@ function compare(
   [...oldValues]: string[],
   newValues: string[]
 ): void {
-  // group all the actual nodes
-  const nodes = group(start, end);
+  // initialize cache if missing, using WeakMap to prevent memory leaks
+  if (typeof window.groups === "undefined") {
+    window.groups = new WeakMap();
+  }
+
+  // attempt to get groups from cache, group all the actual nodes otherwise
+  const nodes = window.groups.get(start) ?? group(start, end);
 
   // insert new values in when old values are empty
   if (oldValues.length === 0) {
@@ -266,7 +286,7 @@ function compare(
       clear(nodes[position]);
       // cache nodes for later
       cache[value] = nodes.splice(position, 1)[0];
-      // increment hte modifier
+      // increment the modifier
       modifier++;
     }
   }
@@ -313,4 +333,7 @@ function compare(
     // insert value into old values for reference
     oldValues.splice(index, 0, newValue);
   }
+
+  // update the cache in the WeakMap
+  window.groups.set(start, nodes);
 }
