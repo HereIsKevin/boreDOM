@@ -43,7 +43,7 @@
     "format:write": "prettier --write ./src/ ./examples/ ./tests/ ./*.js ./*.cjs ./*.json ./*.md",
     "lint:check": "eslint --ext .ts ./src/",
     "lint:fix": "eslint --fix --ext .ts ./src/",
-    "start": "serve"
+    "serve": "serve"
   },
   "repository": {
     "type": "git",
