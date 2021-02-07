@@ -1,6 +1,6 @@
 export { RawTemplate, RawValues, html, rawFragment };
 
-type RawValues = (string | string[])[];
+type RawValues = (string | RawTemplate | RawTemplate[])[];
 
 interface RawTemplate {
   strings: TemplateStringsArray;
@@ -8,12 +8,9 @@ interface RawTemplate {
 }
 
 function rawFragment(value: string): DocumentFragment {
-  // create a template for parsing the html value
   const template = document.createElement("template");
-  // parse the value through innerHTML
   template.innerHTML = value;
 
-  // retrieve the template content as a document fragment
   return template.content;
 }
 

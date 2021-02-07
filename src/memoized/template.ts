@@ -1,235 +1,187 @@
-export { TemplateAttribute, TemplateElement, TemplateText, Template, template };
+export { Template, TemplateAttribute, TemplateNode, TemplateValue };
 
-import { RawTemplate, RawValues, rawFragment } from "./raw";
+import { RawTemplate, RawValues, rawFragment } from "./raw.js";
+
+type TemplateValue = string | Template | Template[];
 
 interface TemplateAttribute {
   element: Element;
   name: string;
-  index: number;
+  parts: string[];
+  indexes: number[];
+  value?: string;
 }
 
-interface TemplateText {
-  text: Text;
-  index: number;
-}
-
-interface TemplateElement {
+interface TemplateNode {
   start: Comment;
   end: Comment;
   index: number;
+  value?: TemplateValue;
 }
 
-interface Template {
-  strings: ReadonlyArray<string>;
-  values: RawValues;
-  fragment: DocumentFragment;
-  texts: TemplateText[];
-  elements: TemplateElement[];
-  attributes: TemplateAttribute[];
-}
+class Template {
+  public strings: ReadonlyArray<string>;
+  public values: RawValues;
+  public attributes: TemplateAttribute[];
+  public nodes: TemplateNode[];
+  public fragment: DocumentFragment;
 
-function prepare(strings: ReadonlyArray<string>): string {
-  let result = strings[0];
-
-  // iterate without the first item due to interpolation
-  for (let index = 1; index < strings.length; index++) {
-    // use <!--index--> as comment markers for interpolation
-    result += `<!--${index - 1}-->`;
-    // close current item with the string from strings
-    result += strings[index];
+  public constructor(raw: RawTemplate) {
+    this.strings = raw.strings;
+    this.values = raw.values;
+    this.attributes = [];
+    this.nodes = [];
+    this.fragment = rawFragment(this.prepare());
+    
+    this.interpolate(this.fragment);
   }
 
-  return result;
-}
+  private prepare(): string {
+    let result = this.strings[0];
 
-function interpolateAttributes(
-  element: Element,
-  values: RawValues
-): TemplateAttribute[] {
-  const attributes: TemplateAttribute[] = [];
+    for (let index = 1; index < this.strings.length; index++) {
+      result += `<!--${index - 1}-->`;
+      result += this.strings[index];
+    }
 
-  // check every attribute on the element for interpolation markers
-  for (const name of element.getAttributeNames()) {
-    const value = element.getAttribute(name) ?? "";
+    return result;
+  }
 
-    // when a marker is found in the attribute value
-    if (/^<!--[0-9]+-->$/.test(value)) {
-      const index = Number(value.slice(4, value.length - 3));
-      const actual = values[index];
+  private interpolateAttribute(template: TemplateAttribute): void {
+    template.value = template.parts[0];
 
-      if (typeof actual !== "string") {
-        throw new TypeError("attribute value cannot be an array");
+    for (let index = 1; index < template.parts.length; index++) {
+      const current = this.values[template.indexes[index - 1]];
+
+      if (typeof current !== "string") {
+        throw new TypeError("attribute value must be a string");
       }
 
-      // set the attribute to the actual value, converting to string if needed
-      element.setAttribute(name, actual);
-      // mark the attribute as a dynamic item
-      attributes.push({ element, name, index });
+      template.value += current;
+      template.value += template.parts[index];
+    }
+
+    template.element.setAttribute(template.name, template.value);
+  }
+
+  private buildAttribute(element: Element): void {
+    for (const name of element.getAttributeNames()) {
+      const value = element.getAttribute(name) ?? "";
+
+      if (/<!--[0-9]+-->/.test(value)) {
+        const values = value.split(/(<!--[0-9]+-->)/);
+        const parts = values.filter((_, index) => index % 2 === 0);
+        const indexes = values
+          .filter((_, index) => index % 2 === 1)
+          .map((value) => Number(value.match(/[0-9]+/)));
+
+        const attribute = { element, name, parts, indexes };
+
+        this.interpolateAttribute(attribute);
+        this.attributes.push(attribute);
+      }
     }
   }
 
-  return attributes;
-}
+  private interpolateArray(
+    raw: RawTemplate[]
+  ): [DocumentFragment, Template[]] {
+    const result = new DocumentFragment();
+    const templates: Template[] = [];
 
-function markElements(values: string[]): string {
-  let output = "";
+    for (const value of raw) {
+      const template = new Template(value);
 
-  // iterate through values
-  for (const value of values) {
-    // add a separator before each value
-    output += "<!--separator-->";
-    output += value;
+      templates.push(template);
+      result.append(rawFragment("<!--separator-->"));
+      result.append(template.fragment);
+    }
+
+    return [result, templates];
   }
 
-  return output;
-}
+  private interpolateString(raw: string): [DocumentFragment, string] {
+    return [rawFragment(raw), raw];
+  }
 
-function interpolateFragment(
-  index: number,
-  values: RawValues
-): DocumentFragment {
-  // get the actual value from the values
-  const actual = values[index];
-  // mark the value if needed
-  const final = Array.isArray(actual) ? markElements(actual) : actual;
-  // interpolate and generate value
-  const value = `<!--${index}-->${final}<!--${index}-->`;
+  private interpolateTemplate(raw: RawTemplate): [DocumentFragment, Template] {
+    const template = new Template(raw);
+    
+    return [template.fragment, template];
+  }
 
-  // generate document fragment from interpolated value
-  return rawFragment(value);
-}
+  private interpolateNode(template: TemplateNode): void {
+    const raw = this.values[template.index];
 
-function interpolateValues(element: Node, values: RawValues): void {
-  let index = 0;
+    let fragment: DocumentFragment;
+    let result: TemplateValue;
 
-  // iterate through every single child node
-  while (index < element.childNodes.length) {
-    const current = element.childNodes[index];
-    const value = current.nodeValue ?? "";
-
-    // when the current node is a text node and has markers
-    if (current instanceof Comment && /^[0-9]+$/.test(value)) {
-      // interpolate the markers and generate document fragment
-      const fragment = interpolateFragment(Number(value), values);
-      const length = fragment.childNodes.length;
-
-      // replace current node with fragment
-      current.replaceWith(fragment);
-
-      index += length;
+    if (Array.isArray(raw)) {
+      [fragment, result] = this.interpolateArray(raw);
+    } else if (typeof raw === "string") {
+      [fragment, result] = this.interpolateString(raw);
     } else {
+      [fragment, result] = this.interpolateTemplate(raw);
+    }
+
+    template.value = result;
+    template.start.after(fragment);
+  }
+
+  private prepareNode(element: Node): void {
+    let index = 0;
+
+    while (index < element.childNodes.length) {
+      const current = element.childNodes[index];
+      const value = current.nodeValue ?? "";
+
+      if (current instanceof Comment && /^[0-9]+$/.test(value)) {
+        const position = Number(value);
+        const fragment = rawFragment(`<!--${position}--><!--${position}-->`);
+
+        current.replaceWith(fragment);
+        index++;
+      }
+
       index++;
     }
   }
-}
 
-function interpolateNodes(
-  element: Node,
-  values: RawValues
-): [TemplateText[], TemplateElement[]] {
-  const texts: TemplateText[] = [];
-  const elements: TemplateElement[] = [];
+  private buildNode(element: Node): void {
+    this.prepareNode(element);
 
-  // interpolate all values before processing
-  interpolateValues(element, values);
+    for (let index = 0; index < element.childNodes.length; index++) {
+      const current = element.childNodes[index];
+      const next = element.childNodes[index + 1];
+      const value = current.nodeValue ?? "";
 
-  let start: Comment | undefined;
-  let end: Comment | undefined;
-  let index = -1;
+      if (
+        current instanceof Comment &&
+        next instanceof Comment &&
+        /^[0-9]+$/.test(value) &&
+        value === next.nodeValue
+      ) {
+        const node = { start: current, end: next, index: Number(value) };
 
-  for (const node of element.childNodes) {
-    // proceed only if the current node is a comment
-    if (!(node instanceof Comment)) {
-      continue;
-    }
-
-    const value = node.nodeValue ?? "";
-
-    if (typeof start === "undefined" && /^[0-9]+$/.test(value)) {
-      // set start to the current node and index to the node contents when the
-      // current node is an index comment and start is undefined
-      start = node;
-      index = Number(value);
-    } else if (typeof end === "undefined" && Number(value) === index) {
-      // set end if the value matches the index and end is available
-      end = node;
-    }
-
-    // proceed only if both the start and end have been found
-    if (typeof start === "undefined" || typeof end === "undefined") {
-      continue;
-    }
-
-    if (
-      start.nextSibling instanceof Text &&
-      start.nextSibling.nextSibling === end
-    ) {
-      // add to texts if only one text node is in between ths start and the end
-      texts.push({ index, text: start.nextSibling });
-    } else {
-      // add to elements otherwise
-      elements.push({ index, start, end });
-    }
-
-    // reset start, end, and index
-    start = undefined;
-    end = undefined;
-    index = -1;
-  }
-
-  return [texts, elements];
-}
-
-function interpolate(
-  element: Node,
-  values: RawValues
-): [TemplateAttribute[], TemplateText[], TemplateElement[]] {
-  const attributes: TemplateAttribute[] = [];
-  const texts: TemplateText[] = [];
-  const elements: TemplateElement[] = [];
-
-  // find marked attributes and interpolate them for elements
-  if (element instanceof Element) {
-    attributes.push(...interpolateAttributes(element, values));
-  }
-
-  // find marked child nodes and interpolated them for nodes with children
-  if (element.hasChildNodes()) {
-    const interpolated = interpolateNodes(element, values);
-
-    texts.push(...interpolated[0]);
-    elements.push(...interpolated[1]);
-  }
-
-  // iterate through the child nodes of the element
-  for (const node of element.childNodes) {
-    // recursively interpolate elements
-    if (node instanceof Element) {
-      const interpolated = interpolate(node, values);
-
-      attributes.push(...interpolated[0]);
-      texts.push(...interpolated[1]);
-      elements.push(...interpolated[2]);
+        this.interpolateNode(node);
+        this.nodes.push(node);
+      }
     }
   }
 
-  return [attributes, texts, elements];
-}
+  private interpolate(element: Node): void {
+    if (element instanceof Element) {
+      this.buildAttribute(element);
+    }
 
-function template(raw: RawTemplate): Template {
-  // prepare the raw strings by marking interpolated values
-  const prepared = prepare(raw.strings);
-  // create a document fragment from the prepared string
-  const fragment = rawFragment(prepared);
-  // find dynamic items and interpolate markers with actual values
-  const [attributes, texts, elements] = interpolate(fragment, raw.values);
+    if (element.hasChildNodes()) {
+      this.buildNode(element);
+    }
 
-  return {
-    strings: raw.strings,
-    values: raw.values,
-    fragment,
-    texts,
-    elements,
-    attributes,
-  };
+    for (const node of element.childNodes) {
+      if (node instanceof Element) {
+        this.interpolate(node);
+      }
+    }
+  }
 }
