@@ -1,6 +1,7 @@
-export { RawTemplate, RawValues, html, rawFragment };
+export { RawHandler, RawTemplate, RawValues, html, rawFragment };
 
-type RawValues = (string | string[])[];
+type RawHandler = (event: Event) => void;
+type RawValues = (RawHandler | string | string[])[];
 
 interface RawTemplate {
   strings: TemplateStringsArray;
