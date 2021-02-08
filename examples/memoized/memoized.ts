@@ -2,10 +2,10 @@ import { memoized } from "../../dist/esm/index.js";
 
 const { html, render } = memoized;
 
-function template(value: number) {
-  return html`
+const template = (value: number, handler: () => void) =>
+  html`
     <div id="display">Value is currently: ${String(value)}</div>
-    <button id="increment">Click to increment</button>
+    <button id="increment" onclick="${handler}">Click to increment</button>
     <table>
       <tbody>
         ${[...Array(value).keys()]
@@ -14,13 +14,18 @@ function template(value: number) {
       </tbody>
     </table>
   `;
-}
 
-function update(node: Element, value: number) {
+const update = () => {
   console.time("render");
-  render(node, template(value));
+
+  value++;
+
+  if (target !== null) {
+    render(target, template(value, update));
+  }
+
   console.timeEnd("render");
-}
+};
 
 let value = 0;
 
@@ -30,9 +35,4 @@ if (target === null) {
   throw new Error("target missing");
 }
 
-update(target, value);
-
-document.getElementById("increment")?.addEventListener("click", () => {
-  value++;
-  update(target, value);
-});
+render(target, template(value, update));
