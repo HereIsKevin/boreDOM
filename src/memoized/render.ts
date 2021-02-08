@@ -36,6 +36,25 @@ function objectZip<K extends string | number, V>(
   return result;
 }
 
+/**
+ * Renders a template created with {@link html} to the targeted element.
+ *
+ * @param target Target element for rendering.
+ * @param rawTemplate Template created with {@link html} to be rendered.
+ *
+ * @example Rendering "Hello, world!" and "Hello, universe!"
+ *
+ * ```typescript
+ * const template = (value) => html`<div>Hello, ${value}!</div>`;
+ *
+ * // renders elements and fully caches template
+ * render(document.body, template("world"));
+ *
+ * // only updates changes without virtual DOM diffing!
+ * render(document.body, template("universe"));
+ * ```
+ */
+
 function render(target: Element, rawTemplate: RawTemplate): void {
   // initialize cache if missing, using WeakMap to prevent memory leaks
   if (typeof window.templates === "undefined") {
