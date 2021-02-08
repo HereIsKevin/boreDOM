@@ -22,6 +22,7 @@
     "watch:bundle:esm": "rollup --watch --config ./rollup.config.esm.js",
     "watch:bundle:cjs": "rollup --watch --config ./rollup.config.cjs.js",
     "watch:bundle": "npm-run-all --parallel watch:bundle:esm watch:bundle:cjs",
+    "watch:docs": "typedoc --watch --name boreDOM ./src/index.ts --out ./docs/",
     "watch:examples": "tsc --watch --project ./examples/tsconfig.json",
     "watch:tests": "tsc --watch --project ./tests/tsconfig.json",
     "watch": "npm-run-all --parallel watch:tsc watch:bundle:esm",
