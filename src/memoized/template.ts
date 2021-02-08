@@ -28,13 +28,22 @@ interface Template {
   attributes: TemplateAttribute[];
 }
 
-function prepare(strings: ReadonlyArray<string>): string {
+function prepare(strings: ReadonlyArray<string>, values: RawValues): string {
   let result = strings[0];
 
   // iterate without the first item due to interpolation
   for (let index = 1; index < strings.length; index++) {
-    // use <!--index--> as comment markers for interpolation
-    result += `<!--${index - 1}-->`;
+    const last = index - 1;
+    const value = values[last];
+
+    if (typeof value !== "string" && !Array.isArray(value)) {
+      // quote comment markers for event handlers;
+      result += `"<!--${last}-->"`;
+    } else {
+      // use <!--last--> as comment markers for interpolation
+      result += `<!--${last}-->`;
+    }
+
     // close current item with the string from strings
     result += strings[index];
   }
@@ -232,7 +241,7 @@ function interpolate(
 
 function template(raw: RawTemplate): Template {
   // prepare the raw strings by marking interpolated values
-  const prepared = prepare(raw.strings);
+  const prepared = prepare(raw.strings, raw.values);
   // create a document fragment from the prepared string
   const fragment = rawFragment(prepared);
   // find dynamic items and interpolate markers with actual values
