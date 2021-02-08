@@ -9,7 +9,9 @@ declare global {
 const createRows = (count: number) =>
   [...Array(count + 1000).keys()]
     .slice(count)
-    .map((x) => html`<button onclick="window.removeValues(event);">${x}</button>`);
+    .map(
+      (x) => html`<button onclick="window.removeValues(event);">${x}</button>`
+    );
 
 const template = (rows: string[]) =>
   html`

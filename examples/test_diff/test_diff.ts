@@ -12,7 +12,7 @@ const _render = (target: any, template: any) => {
   console.time();
   render(target, template);
   console.timeEnd();
-}
+};
 
 const createRows = (count: number) =>
   [...Array(count + 1000).keys()]
@@ -33,7 +33,7 @@ const template = (rows: string[]) =>
 const add = (target: Element, rows: string[]) => {
   const newRows = [...rows, ...createRows(rows.length)];
 
-  _render(target, template(newRows))
+  _render(target, template(newRows));
 
   return newRows;
 };
@@ -41,7 +41,7 @@ const add = (target: Element, rows: string[]) => {
 const remove = (target: Element, rows: string[], index: number) => {
   const newRows = [...rows.slice(0, index), ...rows.slice(index + 1)];
 
-  _render(target, template(newRows))
+  _render(target, template(newRows));
 
   return newRows;
 };
@@ -49,7 +49,7 @@ const remove = (target: Element, rows: string[], index: number) => {
 const clear = (target: Element) => {
   const newRows: string[] = [];
 
-  _render(target, template(newRows))
+  _render(target, template(newRows));
 
   return newRows;
 };
@@ -62,7 +62,7 @@ const swap = (target: Element, rows: string[]) => {
     newRows[1],
   ];
 
-  _render(target, template(newRows))
+  _render(target, template(newRows));
 
   return newRows;
 };
@@ -78,7 +78,7 @@ const update = (target: Element, rows: string[]) => {
     `.trim();
   }
 
-  _render(target, template(newRows))
+  _render(target, template(newRows));
 
   return newRows;
 };
