@@ -90,20 +90,35 @@ function render(target: Element, rawTemplate: RawTemplate): void {
       // extract element and name of attribute from cache
       const { element, name } = cache.attributes[index];
 
-      // make sure the new value is not an array
-      if (Array.isArray(newValue)) {
-        throw new TypeError("attribute value cannot be an array");
+      if (
+        /^on[a-z]+$/.test(name) &&
+        typeof oldValue !== "string" &&
+        !Array.isArray(oldValue)
+      ) {
+        // remove old event handlers
+        element.removeEventListener(name, oldValue);
       }
 
-      // update the attribute
-      element.setAttribute(name, newValue);
+      if (Array.isArray(newValue)) {
+        // make sure the new value is not an array
+        throw new TypeError("attribute value cannot be an array");
+      } else if (typeof newValue === "string") {
+        // update the attribute
+        element.setAttribute(name, newValue);
+      } else if (/^on[a-z]+$/.test(name)) {
+        // add new event handlers for "on" attributes
+        element.addEventListener(name, newValue);
+      } else {
+        // regular attributes cannot take event handlers
+        throw new TypeError("non-handler attributes cannot be handlers");
+      }
     } else if (index in cache.texts) {
       // extract the text node from the cache
       const { text } = cache.texts[index];
 
-      // make sure the new value is not an array
-      if (Array.isArray(newValue)) {
-        throw new TypeError("text value cannot be an array");
+      // make sure the new value is a string
+      if (typeof newValue !== "string") {
+        throw new TypeError("text value must be a string");
       }
 
       // update the text node value
