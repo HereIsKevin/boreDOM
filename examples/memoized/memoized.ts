@@ -5,7 +5,7 @@ const { html, render } = memoized;
 const template = (value: number, handler: () => void) =>
   html`
     <div id="display">Value is currently: ${String(value)}</div>
-    <button id="increment" onclick="${handler}">Click to increment</button>
+    <button id="increment" onclick=${handler}>Click to increment</button>
     <table>
       <tbody>
         ${[...Array(value).keys()]
