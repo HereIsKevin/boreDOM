@@ -57,12 +57,22 @@ function interpolateAttributes(
       const index = Number(value.slice(4, value.length - 3));
       const actual = values[index];
 
-      if (typeof actual !== "string") {
+      if (Array.isArray(actual)) {
+        // attributes cannot be string arrays
         throw new TypeError("attribute value cannot be an array");
+      } else if (typeof actual === "string") {
+        // set the attribute to the actual value, converting to string if needed
+        element.setAttribute(name, actual);
+      } else if (/^on[a-z]+$/.test(name)) {
+        // remove placeholder value
+        element.removeAttribute(name);
+        // "on" attributes can take event handlers
+        element.addEventListener(name.slice(2), actual);
+      } else {
+        // regular attributes cannot take event handlers
+        throw new TypeError("non-handler attributes cannot be handlers");
       }
 
-      // set the attribute to the actual value, converting to string if needed
-      element.setAttribute(name, actual);
       // mark the attribute as a dynamic item
       attributes.push({ element, name, index });
     }
@@ -109,6 +119,10 @@ function interpolateValues(element: Node, values: RawValues): void {
 
     // when the current node is a text node and has markers
     if (current instanceof Comment && /^[0-9]+$/.test(value)) {
+      if (typeof values !== "string" && !Array.isArray(values)) {
+        throw new TypeError("cannot take event handler as value");
+      }
+
       // interpolate the markers and generate document fragment
       const fragment = interpolateFragment(Number(value), values);
       const length = fragment.childNodes.length;
