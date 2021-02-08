@@ -5,3 +5,4 @@ export {
   html,
 } from "./raw";
 export { Target, render } from "./render";
+export { Component, bound, element, property, state } from "./component";
