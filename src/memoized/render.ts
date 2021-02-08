@@ -1,4 +1,4 @@
-export { render };
+export { Target, render };
 
 import { RawTemplate, RawValues } from "./raw";
 import {
@@ -9,6 +9,8 @@ import {
 } from "./template";
 import { compare, diff } from "./diff";
 
+type Target = Element | ShadowRoot;
+
 interface Cache {
   values: RawValues;
   attributes: Record<number, TemplateAttribute>;
@@ -18,7 +20,7 @@ interface Cache {
 
 declare global {
   interface Window {
-    templates?: WeakMap<Element, Cache>;
+    templates?: WeakMap<Target, Cache>;
   }
 }
 
@@ -55,7 +57,7 @@ function objectZip<K extends string | number, V>(
  * ```
  */
 
-function render(target: Element, rawTemplate: RawTemplate): void {
+function render(target: Target, rawTemplate: RawTemplate): void {
   // initialize cache if missing, using WeakMap to prevent memory leaks
   if (typeof window.templates === "undefined") {
     window.templates = new WeakMap();
