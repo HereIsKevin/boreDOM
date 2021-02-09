@@ -1,6 +1,7 @@
 export { Component, bound, element, property, state };
 
-import * as memoized from "../memoized/index";
+import { RawHandler, RawTemplate } from "./raw";
+import { render } from "./render";
 
 interface Component {
   constructor: typeof Component;
@@ -49,13 +50,13 @@ function bound(
   key: string,
   descriptor: PropertyDescriptor
 ): PropertyDescriptor {
-  let cache: memoized.Handler | undefined;
-  let method: memoized.Handler = descriptor.value;
+  let cache: RawHandler | undefined;
+  let method: RawHandler = descriptor.value;
   let updated = true;
 
   return {
     configurable: true,
-    get(): memoized.Handler {
+    get(): RawHandler {
       if (updated || typeof cache === "undefined") {
         // cache bound method if cache is missing or method is updated
         cache = method.bind(this);
@@ -64,7 +65,7 @@ function bound(
 
       return cache;
     },
-    set(value: memoized.Handler): void {
+    set(value: RawHandler): void {
       method = value;
 
       // set method to be updated
@@ -275,10 +276,10 @@ class Component extends HTMLElement {
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
   protected update(): void {
-    memoized.render(this.root, this.render());
+    render(this.root, this.render());
   }
 
-  protected render(): memoized.Template {
+  protected render(): RawTemplate {
     throw new Error("render is not implemented");
   }
 }
