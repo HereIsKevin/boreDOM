@@ -1,6 +1,6 @@
-import { component } from "../../dist/esm/index.js";
+import { memoized } from "../../dist/esm/index.js";
 
-const { Component, property, bound, element, html, state } = component;
+const { Component, property, bound, element, html, state } = memoized;
 
 @element("example-component")
 class ExampleComponent extends Component {
@@ -18,7 +18,7 @@ class ExampleComponent extends Component {
 
   render() {
     return html`
-      <div>${this.data.count}</div>
+      <div>${String(this.data.count)}</div>
       <button onclick=${this.decrement}>Decrement</button>
       <button onclick=${this.increment}>Increment</button>
     `;
