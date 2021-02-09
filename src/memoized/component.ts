@@ -80,8 +80,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   );
 }
 
-function recursiveProxy(value: Structure, handler: () => void): unknown {
-  return new Proxy(value, {
+function recursiveProxy(structure: Structure, handler: () => void): unknown {
+  return new Proxy(structure, {
     get(target: Structure, key: string | number): unknown {
       let current: unknown;
 

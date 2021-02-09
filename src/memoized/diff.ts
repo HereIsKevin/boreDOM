@@ -118,8 +118,8 @@ function diff(start: Comment, end: Comment, value: string): void {
   // keep a modifier for removals
   let modifier = 0;
 
-  for (let index = 0; index < length; index++) {
-    const position = index - modifier;
+  for (let place = 0; place < length; place++) {
+    const position = place - modifier;
     const node = oldNodes[position];
 
     // when the node to be removed can be found and is not a diffing mistake
@@ -127,7 +127,7 @@ function diff(start: Comment, end: Comment, value: string): void {
       typeof node !== "undefined" &&
       isChildNode(node) &&
       !node.isEqualNode(newNodes[position]) &&
-      !node.isEqualNode(newNodes[index])
+      !node.isEqualNode(newNodes[place])
     ) {
       // remove the node
       node.remove();
@@ -270,15 +270,15 @@ function compare(
   // keep a modifier for removals
   let modifier = 0;
 
-  for (let index = 0; index < length; index++) {
-    const position = index - modifier;
+  for (let place = 0; place < length; place++) {
+    const position = place - modifier;
     const value = oldValues[position];
 
     // when the value to be removed can be found and is not a diffing mistake
     if (
       typeof value !== "undefined" &&
       value !== newValues[position] &&
-      value !== newValues[index]
+      value !== newValues[place]
     ) {
       // remove the value from old values
       oldValues.splice(position, 1);
