@@ -1,17 +1,9 @@
-import { component } from "../../dist/esm/index.js";
+import { memoized } from "../../dist/esm/index.js";
 
-const { Component, property, bound, element, html } = component;
-
-class TimedComponent extends Component {
-  update() {
-    console.time("render");
-    super.update();
-    console.timeEnd("render");
-  }
-}
+const { Component, property, bound, element, html } = memoized;
 
 @element("stopwatch-app")
-class StopwatchApp extends TimedComponent {
+class StopwatchApp extends Component {
   run: boolean = false;
   interval?: number = undefined;
 
@@ -55,7 +47,7 @@ class StopwatchApp extends TimedComponent {
 }
 
 @element("stopwatch-view")
-class StopwatchView extends TimedComponent {
+class StopwatchView extends Component {
   @property seconds: number = 0;
 
   render() {
