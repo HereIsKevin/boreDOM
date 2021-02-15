@@ -1,101 +1,87 @@
-export { TemplateAttribute, TemplateElement, TemplateText, Template, template };
+export { TemplateAttribute, TemplateValue, Template };
 
-import { RawTemplate, RawValues, rawFragment } from "./raw";
+import { RawTemplate, RawValue, rawFragment } from "./raw";
 
 interface TemplateAttribute {
-  element: Element;
   name: string;
-  index: number;
+  element: Element;
 }
 
-interface TemplateText {
-  text: Text;
-  index: number;
-}
-
-interface TemplateElement {
+interface TemplateValue {
   start: Comment;
   end: Comment;
-  index: number;
 }
 
-interface Template {
-  strings: ReadonlyArray<string>;
-  values: RawValues;
-  fragment: DocumentFragment;
-  texts: TemplateText[];
-  elements: TemplateElement[];
-  attributes: TemplateAttribute[];
+const groups = new WeakMap<Comment, Node[][]>();
+
+function isChildNode(value: Node): value is ChildNode {
+  return value.parentNode !== null;
 }
 
-function prepare(strings: ReadonlyArray<string>, values: RawValues): string {
-  let result = strings[0];
-
-  // iterate without the first item due to interpolation
-  for (let index = 1; index < strings.length; index++) {
-    const last = index - 1;
-    const value = values[last];
-
-    if (typeof value !== "string" && !Array.isArray(value)) {
-      // quote comment markers for event handlers;
-      result += `"<!--${last}-->"`;
-    } else {
-      // use <!--last--> as comment markers for interpolation
-      result += `<!--${last}-->`;
+function indexOf(nodes: Node[], value: Node): number {
+  for (let index = 0; index < nodes.length; index++) {
+    if (nodes[index].isEqualNode(value)) {
+      return index;
     }
-
-    // close current item with the string from strings
-    result += strings[index];
   }
 
-  return result;
+  return -1;
 }
 
-function interpolateAttributes(
-  element: Element,
-  values: RawValues
-): TemplateAttribute[] {
-  const attributes: TemplateAttribute[] = [];
+function includes(nodes: Node[], value: Node): boolean {
+  return indexOf(nodes, value) !== -1;
+}
 
-  // check every attribute on the element for interpolation markers
-  for (const name of element.getAttributeNames()) {
-    const value = element.getAttribute(name) ?? "";
+function collect(start: Comment, end: Comment): Node[] {
+  const nodes: Node[] = [];
 
-    // when a marker is found in the attribute value
-    if (/^<!--[0-9]+-->$/.test(value)) {
-      const index = Number(value.slice(4, value.length - 3));
-      const actual = values[index];
+  let current = start.nextSibling;
 
-      if (Array.isArray(actual)) {
-        // attributes cannot be string arrays
-        throw new TypeError("attribute value cannot be an array");
-      } else if (typeof actual === "string") {
-        // set the attribute to the actual value, converting to string if needed
-        element.setAttribute(name, actual);
-      } else if (/^on[a-z]+$/.test(name)) {
-        // remove placeholder value
-        element.removeAttribute(name);
-        // "on" attributes can take event handlers
-        element.addEventListener(name.slice(2), actual);
-      } else {
-        // regular attributes cannot take event handlers
-        throw new TypeError("non-handler attributes cannot be handlers");
+  while (current !== end && current !== null) {
+    nodes.push(current);
+    current = current.nextSibling;
+  }
+
+  return nodes;
+}
+
+function sanitize(nodes: ArrayLike<Node>): void {
+  let index = 0;
+
+  while (index < nodes.length) {
+    const node = nodes[index];
+
+    if (
+      node instanceof Comment ||
+      (node instanceof Text && /^\s*$/.test(node.textContent ?? ""))
+    ) {
+      node.remove();
+
+      if (Array.isArray(nodes)) {
+        nodes.splice(index, 1);
       }
 
-      // mark the attribute as a dynamic item
-      attributes.push({ element, name, index });
+      continue;
     }
-  }
 
-  return attributes;
+    index++;
+  }
 }
 
-function markElements(values: string[]): string {
+function wipe(start: Comment, end: Comment): void {
+  let current = start.nextSibling;
+
+  while (current !== null && current !== end) {
+    current.remove();
+    current = start.nextSibling;
+  }
+}
+
+
+function mark(values: string[]): string {
   let output = "";
 
-  // iterate through values
   for (const value of values) {
-    // add a separator before each value
     output += "<!--separator-->";
     output += value;
   }
@@ -103,156 +89,288 @@ function markElements(values: string[]): string {
   return output;
 }
 
-function interpolateFragment(
-  index: number,
-  values: RawValues
-): DocumentFragment {
-  // get the actual value from the values
-  const actual = values[index];
-  // mark the value if needed
-  const final = Array.isArray(actual) ? markElements(actual) : actual;
-  // interpolate and generate value
-  const value = `<!--${index}-->${final}<!--${index}-->`;
+function group(start: Comment, end: Comment): Node[][] {
+  const nodes: Node[][] = [];
 
-  // generate document fragment from interpolated value
-  return rawFragment(value);
+  let current = start.nextSibling;
+
+  while (current !== end && current !== null) {
+    if (current instanceof Comment && current.nodeValue === "separator") {
+      nodes.push([]);
+    }
+
+    nodes[nodes.length - 1].push(current);
+    current = current.nextSibling;
+  }
+
+  return nodes;
 }
 
-function interpolateValues(element: Node, values: RawValues): void {
-  let index = 0;
-
-  // iterate through every single child node
-  while (index < element.childNodes.length) {
-    const current = element.childNodes[index];
-    const value = current.nodeValue ?? "";
-
-    // when the current node is a text node and has markers
-    if (current instanceof Comment && /^[0-9]+$/.test(value)) {
-      if (typeof values !== "string" && !Array.isArray(values)) {
-        throw new TypeError("cannot take event handler as value");
-      }
-
-      // interpolate the markers and generate document fragment
-      const fragment = interpolateFragment(Number(value), values);
-      const length = fragment.childNodes.length;
-
-      // replace current node with fragment
-      current.replaceWith(fragment);
-
-      index += length;
+function clear(nodes: Node[]): void {
+  for (const node of nodes) {
+    if (isChildNode(node)) {
+      node.remove();
     } else {
-      index++;
+      throw new TypeError("node must be a child node");
     }
   }
 }
 
-function interpolateNodes(
-  element: Node,
-  values: RawValues
-): [TemplateText[], TemplateElement[]] {
-  const texts: TemplateText[] = [];
-  const elements: TemplateElement[] = [];
+function insert(reference: Node[], nodes: Node[]): void {
+  const point = reference[0];
 
-  // interpolate all values before processing
-  interpolateValues(element, values);
+  if (!isChildNode(point)) {
+    throw new TypeError("reference point must be a child node");
+  }
 
-  let start: Comment | undefined;
-  let end: Comment | undefined;
-  let index = -1;
+  point.before(...nodes);
+}
 
-  for (const node of element.childNodes) {
-    // proceed only if the current node is a comment
-    if (!(node instanceof Comment)) {
+function diff(
+  start: Comment,
+  end: Comment,
+  [...oldValues]: string[],
+  newValues: string[]
+): void {
+  const nodes = groups.get(start) ?? group(start, end);
+
+  if (oldValues.length === 0) {
+    start.after(...rawFragment(mark(newValues)).childNodes);
+    return;
+  }
+
+  if (newValues.length === 0) {
+    let next = start.nextSibling;
+
+    while (next !== null && next !== end) {
+      next.remove();
+      next = start.nextSibling;
+    }
+
+    return;
+  }
+
+  const cache: Record<string, Node[]> = {};
+  const length = Math.max(newValues.length, oldValues.length);
+
+  let modifier = 0;
+
+  for (let place = 0; place < length; place++) {
+    const position = place - modifier;
+    const value = oldValues[position];
+
+    if (
+      typeof value !== "undefined" &&
+      value !== newValues[position] &&
+      value !== newValues[place]
+    ) {
+      oldValues.splice(position, 1);
+      clear(nodes[position]);
+      cache[value] = nodes.splice(position, 1)[0];
+      modifier++;
+    }
+  }
+
+  let index = 0;
+
+  while (index < newValues.length) {
+    const oldValue = oldValues[index];
+    const newValue = newValues[index];
+
+    if (newValue === oldValue) {
+      index++;
       continue;
     }
 
-    const value = node.nodeValue ?? "";
+    let node: Node[];
 
-    if (typeof start === "undefined" && /^[0-9]+$/.test(value)) {
-      // set start to the current node and index to the node contents when the
-      // current node is an index comment and start is undefined
-      start = node;
-      index = Number(value);
-    } else if (typeof end === "undefined" && Number(value) === index) {
-      // set end if the value matches the index and end is available
-      end = node;
-    }
-
-    // proceed only if both the start and end have been found
-    if (typeof start === "undefined" || typeof end === "undefined") {
-      continue;
+    if (typeof cache[newValue] !== "undefined") {
+      node = cache[newValue];
+      delete cache[newValue];
+    } else {
+      const fragment = rawFragment(`<!--separator-->${newValue}`);
+      node = [...fragment.childNodes];
     }
 
     if (
-      start.nextSibling instanceof Text &&
-      start.nextSibling.nextSibling === end
+      typeof oldValue !== "undefined" &&
+      typeof nodes[index] !== "undefined" &&
+      isChildNode(nodes[index][0])
     ) {
-      // add to texts if only one text node is in between ths start and the end
-      texts.push({ index, text: start.nextSibling });
+      insert(nodes[index], node);
     } else {
-      // add to elements otherwise
-      elements.push({ index, start, end });
+      end.before(...node);
     }
 
-    // reset start, end, and index
-    start = undefined;
-    end = undefined;
-    index = -1;
+    nodes.splice(index, 0, node);
+    oldValues.splice(index, 0, newValue);
   }
 
-  return [texts, elements];
+  groups.set(start, nodes);
 }
 
-function interpolate(
-  element: Node,
-  values: RawValues
-): [TemplateAttribute[], TemplateText[], TemplateElement[]] {
-  const attributes: TemplateAttribute[] = [];
-  const texts: TemplateText[] = [];
-  const elements: TemplateElement[] = [];
+class Template {
+  public raw: RawTemplate;
+  public fragment: DocumentFragment;
 
-  // find marked attributes and interpolate them for elements
-  if (element instanceof Element) {
-    attributes.push(...interpolateAttributes(element, values));
+  private attributes: Record<number, TemplateAttribute>;
+  private values: Record<number, TemplateValue>;
+
+  public constructor(raw: RawTemplate) {
+    this.raw = raw;
+    this.fragment = rawFragment(this.prepare());
+
+    this.attributes = {};
+    this.values = {};
+
+    this.findAll(this.fragment);
+    this.update(this.raw.values, false);
   }
 
-  // find marked child nodes and interpolated them for nodes with children
-  if (element.hasChildNodes()) {
-    const interpolated = interpolateNodes(element, values);
+  private prepare(): string {
+    let result = this.raw.strings[0];
 
-    texts.push(...interpolated[0]);
-    elements.push(...interpolated[1]);
+    for (let index = 1; index < this.raw.strings.length; index++) {
+      const last = index - 1;
+      const value = this.raw.values[last];
+
+      if (typeof value !== "string" && !Array.isArray(value)) {
+        result += `"<!--${last}-->"`;
+      } else {
+        result += `<!--${last}-->`;
+      }
+
+      result += this.raw.strings[index];
+    }
+
+    return result;
   }
 
-  // iterate through the child nodes of the element
-  for (const node of element.childNodes) {
-    // recursively interpolate elements
+  private findAttributes(element: Element): void {
+    for (const name of element.getAttributeNames()) {
+      const value = element.getAttribute(name) ?? "";
+      const matches = value.match(/^<!--([0-9]+)-->$/);
+
+      if (matches !== null && matches[0] === value) {
+        const index = Number(matches[1]);
+
+        this.attributes[index] = { name, element };
+      }
+    }
+  }
+
+  private findValues(node: Node): void {
+    let current = node.firstChild;
+
+    while (current !== null) {
+      if (!(current instanceof Comment)) {
+        current = current.nextSibling;
+        continue;
+      }
+
+      const value = current.nodeValue ?? "";
+      const matches = value.match(/^([0-9]+)$/);
+
+      if (matches !== null && matches[0] === value) {
+        const index = Number(matches[1]);
+        const start = new Comment("start");
+        const end = new Comment("end");
+
+        current.replaceWith(start, end);
+        current = end.nextSibling;
+
+        this.values[index] = { start, end };
+      } else {
+        current = current.nextSibling;
+      }
+    }
+  }
+
+  private findAll(node: Node): void {
     if (node instanceof Element) {
-      const interpolated = interpolate(node, values);
+      this.findAttributes(node);
+    }
 
-      attributes.push(...interpolated[0]);
-      texts.push(...interpolated[1]);
-      elements.push(...interpolated[2]);
+    if (node.hasChildNodes()) {
+      this.findValues(node);
+    }
+
+    for (const child of node.childNodes) {
+      if (child.hasChildNodes()) {
+        this.findAll(child);
+      }
     }
   }
 
-  return [attributes, texts, elements];
-}
+  private updateAttribute(
+    index: number,
+    oldValue: RawValue,
+    newValue: RawValue
+  ): void {
+    const { name, element } = this.attributes[index];
+    const matches = name.match(/^on([a-z]+)$/);
 
-function template(raw: RawTemplate): Template {
-  // prepare the raw strings by marking interpolated values
-  const prepared = prepare(raw.strings, raw.values);
-  // create a document fragment from the prepared string
-  const fragment = rawFragment(prepared);
-  // find dynamic items and interpolate markers with actual values
-  const [attributes, texts, elements] = interpolate(fragment, raw.values);
+    if (typeof newValue === "string") {
+      element.setAttribute(name, newValue);
+    } else if (Array.isArray(newValue)) {
+      throw new TypeError("attribute cannot be an array");
+    } else if (matches !== null && matches[0] === name) {
+      const handler = matches[1];
 
-  return {
-    strings: raw.strings,
-    values: raw.values,
-    fragment,
-    texts,
-    elements,
-    attributes,
-  };
+      if (typeof oldValue !== "string" && !Array.isArray(oldValue)) {
+        element.removeAttribute(name);
+        element.removeEventListener(handler, oldValue);
+      }
+
+      if (typeof newValue !== "string" && !Array.isArray(newValue)) {
+        element.addEventListener(handler, newValue);
+      }
+    } else {
+      throw new TypeError("non-handler attributes cannot be handlers");
+    }
+  }
+
+  private updateValues(
+    index: number,
+    oldValue: RawValue,
+    newValue: RawValue
+  ): void {
+    const { start, end } = this.values[index];
+
+    if (typeof newValue === "string") {
+      if (typeof oldValue !== "string") {
+        throw new TypeError("value types must be consistent");
+      }
+
+      const text = new Text(newValue);
+
+      wipe(start, end);
+      start.after(text);
+    } else if (Array.isArray(newValue)) {
+      if (!Array.isArray(oldValue)) {
+        throw new TypeError("value types must be consistent");
+      }
+
+      diff(start, end, oldValue, newValue);
+    } else {
+      throw new TypeError("value cannot be a handler");
+    }
+  }
+
+  public update(values: RawValue[], compare: boolean = true): void {
+    for (let index = 0; index < this.raw.values.length; index++) {
+      const oldValue = this.raw.values[index];
+      const newValue = values[index];
+
+      if (compare && oldValue === newValue) {
+        continue;
+      }
+
+      if (index in this.attributes) {
+        this.updateAttribute(index, oldValue, newValue);
+      } else if (index in this.values) {
+        this.updateValues(index, oldValue, newValue);
+      }
+    }
+  }
 }
