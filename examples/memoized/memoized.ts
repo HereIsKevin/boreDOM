@@ -9,8 +9,7 @@ const template = (value: number, handler: () => void) =>
     <table>
       <tbody>
         ${[...Array(value).keys()]
-          .map((x) => `<tr><td>${x}</td></tr>`)
-          .join("")}
+          .map((x) => `<tr><td>${x}</td></tr>`)}
       </tbody>
     </table>
   `;
