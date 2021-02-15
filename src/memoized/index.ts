@@ -1,7 +1,7 @@
 export {
   RawHandler as Handler,
   RawTemplate as Template,
-  RawValues as Values,
+  RawValue as Value,
   html,
 } from "./raw";
 export { Target, render } from "./render";
