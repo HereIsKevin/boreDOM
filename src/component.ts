@@ -1,12 +1,12 @@
-export { Component, bound, element, html, property, state };
+export { Component, bound, element, property, state };
 
-import * as dom from "./dom";
+import { RawHandler, RawTemplate } from "./raw";
+import { render } from "./render";
 
 interface Component {
   constructor: typeof Component;
 }
 
-type EventHandler = <T extends Event>(event: T) => void;
 type Constructable<T> = new () => T;
 type Primitive = string | number | boolean;
 type Structure = Record<string, unknown> | unknown[];
@@ -50,13 +50,13 @@ function bound(
   key: string,
   descriptor: PropertyDescriptor
 ): PropertyDescriptor {
-  let cache: EventHandler | undefined;
-  let method: EventHandler = descriptor.value;
+  let cache: RawHandler | undefined;
+  let method: RawHandler = descriptor.value;
   let updated = true;
 
   return {
     configurable: true,
-    get(): EventHandler {
+    get(): RawHandler {
       if (updated || typeof cache === "undefined") {
         // cache bound method if cache is missing or method is updated
         cache = method.bind(this);
@@ -65,7 +65,7 @@ function bound(
 
       return cache;
     },
-    set(value: EventHandler): void {
+    set(value: RawHandler): void {
       method = value;
 
       // set method to be updated
@@ -225,85 +225,6 @@ function element(
     window.customElements.define(name, component);
 }
 
-function html(
-  strings: TemplateStringsArray,
-  ...values: (EventHandler | Primitive)[]
-): DocumentFragment {
-  // take leading string first
-  const output: string[] = [strings[0]];
-
-  // event handlers
-  const eventHandlers: Record<string, EventHandler> = {};
-
-  // current event handler number
-  let handlerIndex = 0;
-
-  // process value push, then push next string from strings
-  for (const [index, item] of strings.slice(1, strings.length).entries()) {
-    const value: EventHandler | Primitive = values[index];
-
-    if (isPrimitive(value)) {
-      // stringify types all types except event handlers automatically
-      output.push(String(value));
-    } else {
-      const handlerName = `handler$${handlerIndex}`;
-
-      // cache handler name in attribute on element
-      output.push(handlerName);
-      // cache actual handler in record
-      eventHandlers[`handler$${handlerIndex}`] = value;
-
-      handlerIndex++;
-    }
-
-    output.push(item);
-  }
-
-  // concat processed strings and generate document fragment
-  const result: DocumentFragment = dom.html(output.join(""));
-
-  // add event handlers to result
-  addHandlers(result, eventHandlers);
-
-  return result;
-}
-
-function isElement(node: Node): node is Element {
-  return node.nodeType === Node.ELEMENT_NODE;
-}
-
-function addHandlers(node: Node, handlers: Record<string, EventHandler>): void {
-  // add event listeners only to an element node
-  if (isElement(node)) {
-    // get all event names by iterating through "on" prefixed attributes
-    for (const name of node
-      .getAttributeNames()
-      .filter((x: string): boolean => x.slice(0, 2) === "on")) {
-      // retrieve handler name from cache on element attribute
-      const handlerName: string | null = node.getAttribute(name);
-
-      // stop if the attribute is somehow missing or handler is missing
-      if (
-        handlerName === null ||
-        !Object.keys(handlers).includes(handlerName)
-      ) {
-        continue;
-      }
-
-      // remove cache after retrieving value
-      node.removeAttribute(name);
-
-      // add event listener to element
-      node.addEventListener(name.slice(2), handlers[handlerName]);
-    }
-  }
-
-  // recursively add event handlers to child nodes
-  for (const child of node.childNodes) {
-    addHandlers(child, handlers);
-  }
-}
-
 class Component extends HTMLElement {
   public static observedAttributes: string[] = [];
 
@@ -355,10 +276,10 @@ class Component extends HTMLElement {
   /* eslint-enable @typescript-eslint/no-unused-vars */
 
   protected update(): void {
-    dom.render(this.root, this.render());
+    render(this.root, this.render());
   }
 
-  protected render(): DocumentFragment {
+  protected render(): RawTemplate {
     throw new Error("render is not implemented");
   }
 }
